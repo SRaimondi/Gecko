@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.16)
-project(Gecko LANGUAGES CXX)
+project(Gecko LANGUAGES CXX )
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(HEADER_FILES)
+set(HEADER_FILES include/common/helper_macros.hpp include/geometry/vector.hpp)
 
 set(SOURCE_FILES source/main.cpp)
 
@@ -18,7 +22,45 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE include)
 target_include_directories(${EXECUTABLE_NAME}
         SYSTEM PRIVATE external/spdlog/include)
 
-set(PROJECT_WARNINGS
+set_target_properties(${EXECUTABLE_NAME}
+        PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON)
+
+# Set warnings
+set(MSVC_WARNINGS
+        /W4 # Baseline reasonable warnings
+        /w14242 # 'identifier': conversion from 'type1' to 'type1', possible loss
+        # of data
+        /w14254 # 'operator': conversion from 'type1:field_bits' to
+        # 'type2:field_bits', possible loss of data
+        /w14263 # 'function': member function does not override any base class
+        # virtual member function
+        /w14265 # 'classname': class has virtual functions, but destructor is not
+        # virtual instances of this class may not be destructed correctly
+        /w14287 # 'operator': unsigned/negative constant mismatch
+        /we4289 # nonstandard extension used: 'variable': loop control variable
+        # declared in the for-loop is used outside the for-loop scope
+        /w14296 # 'operator': expression is always 'boolean_value'
+        /w14311 # 'variable': pointer truncation from 'type1' to 'type2'
+        /w14545 # expression before comma evaluates to a function which is missing
+        # an argument list
+        /w14546 # function call before comma missing argument list
+        /w14547 # 'operator': operator before comma has no effect; expected
+        # operator with side-effect
+        /w14549 # 'operator': operator before comma has no effect; did you intend
+        # 'operator'?
+        /w14555 # expression has no effect; expected expression with side- effect
+        /w14619 # pragma warning: there is no warning number 'number'
+        /w14640 # Enable warning on thread un-safe static member initialization
+        /w14826 # Conversion from 'type1' to 'type_2' is sign-extended. This may
+        # cause unexpected runtime behavior.
+        /w14905 # wide string literal cast to 'LPSTR'
+        /w14906 # string literal cast to 'LPWSTR'
+        /w14928 # illegal copy-initialization; more than one user-defined
+        # conversion has been implicitly applied
+        )
+
+set(CLANG_WARNINGS
         -Wall
         -Wextra # reasonable and standard
         -Wshadow # warn the user if a variable declaration shadows one from a
@@ -38,6 +80,10 @@ set(PROJECT_WARNINGS
         -Wdouble-promotion # warn if float is implicit promoted to double
         -Wformat=2 # warn on security issues around functions that format output
         # (ie printf)
+        )
+
+set(GCC_WARNINGS
+        ${CLANG_WARNINGS}
         -Wmisleading-indentation # warn if indentation implies blocks where blocks
         # do not exist
         -Wduplicated-cond # warn if if / else chain has duplicated conditions
@@ -46,6 +92,17 @@ set(PROJECT_WARNINGS
         # probably wanted
         -Wuseless-cast # warn if you perform a cast to the same type
         )
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    message("Building with MSVC warnings")
+    set(PROJECT_WARNINGS ${MSVC_WARNINGS})
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message("Building with Clang warnings")
+    set(PROJECT_WARNINGS ${CLANG_WARNINGS})
+else ()
+    message("Building with GCC warnings")
+    set(PROJECT_WARNINGS ${GCC_WARNINGS})
+endif ()
 
 target_compile_options(${EXECUTABLE_NAME}
         PRIVATE ${PROJECT_WARNINGS})
