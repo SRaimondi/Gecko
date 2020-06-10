@@ -8,7 +8,6 @@
 #include <utility>
 
 namespace Geometry {
-
 namespace Internal {
 
 #if __cplusplus >= 201703L
@@ -105,7 +104,7 @@ public:
   // Cast to another type
   template <typename U>
   NODISCARD CUDA_HOST_DEVICE constexpr Vector<U, N> cast() const {
-    static_assert(std::is_convertible<T, U>::value);
+    static_assert(std::is_convertible<T, U>::value, "Invalid casting");
     return Internal::createFromFunc<Vector<U, N>, N>(
         [this](const size_type i) -> U {
           return static_cast<U>(this->elements[i]);
@@ -131,29 +130,29 @@ public:
   }
 
   NODISCARD CUDA_HOST_DEVICE constexpr reference y() noexcept {
-    static_assert(N >= 2);
+    static_assert(N >= 2, "Using y() member access on vector of size < 2");
     return elements[1];
   }
   NODISCARD CUDA_HOST_DEVICE constexpr const_reference y() const noexcept {
-    static_assert(N >= 2);
+    static_assert(N >= 2, "Using y() member access on vector of size < 2");
     return elements[1];
   }
 
   NODISCARD CUDA_HOST_DEVICE constexpr reference z() noexcept {
-    static_assert(N >= 3);
+    static_assert(N >= 3, "Using z() member access on vector of size < 3");
     return elements[2];
   }
   NODISCARD CUDA_HOST_DEVICE constexpr const_reference z() const noexcept {
-    static_assert(N >= 3);
+    static_assert(N >= 3, "Using z() member access on vector of size < 3");
     return elements[2];
   }
 
   NODISCARD CUDA_HOST_DEVICE constexpr reference w() noexcept {
-    static_assert(N >= 4);
+    static_assert(N >= 4, "Using w() member access on vector of size < 4");
     return elements[3];
   }
   NODISCARD CUDA_HOST_DEVICE constexpr const_reference w() const noexcept {
-    static_assert(N >= 4);
+    static_assert(N >= 4, "Using w() member access on vector of size < 4");
     return elements[3];
   }
 
@@ -314,6 +313,9 @@ public:
 private:
   T elements[N];
 };
+
+// Avoid 0-size vector
+template <typename T> class Vector<T, 0>;
 
 // Mathematical operations
 template <typename T, const std::size_t N>
