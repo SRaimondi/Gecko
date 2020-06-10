@@ -32,6 +32,21 @@ template <typename B> struct Conjunction<B> {
 
 #endif
 
+template <typename T, const std::size_t N>
+NODISCARD constexpr std::size_t computeAlignment() noexcept {
+  if (std::is_fundamental<T>::value) {
+    const std::size_t total_size{sizeof(T) * N};
+    if (total_size % 64 == 0) {
+      return 64;
+    } else if (total_size % 32 == 0) {
+      return 32;
+    } else if (total_size % 16 == 0) {
+      return 16;
+    }
+  }
+  return std::alignment_of<T>::value;
+}
+
 template <typename Type, typename Function, std::size_t... I>
 NODISCARD CUDA_HOST_DEVICE constexpr Type
 createFromFuncImplementation(Function &&func, std::index_sequence<I...>) {
@@ -39,7 +54,7 @@ createFromFuncImplementation(Function &&func, std::index_sequence<I...>) {
 }
 
 template <typename Type, const std::size_t N, typename Function,
-          typename Indices = std::make_index_sequence<N>>
+    typename Indices = std::make_index_sequence<N>>
 NODISCARD CUDA_HOST_DEVICE constexpr Type createFromFunc(Function &&func) {
   return createFromFuncImplementation<Type>(std::forward<Function>(func),
                                             Indices{});
@@ -73,7 +88,8 @@ template <const std::size_t I> struct Reduction<1, I> {
 
 } // namespace Internal
 
-template <typename T, const std::size_t N> class Vector {
+template <typename T, const std::size_t N>
+class alignas(Internal::computeAlignment<T, N>()) Vector {
 public:
   using value_type = T;
   using size_type = unsigned int;
@@ -305,7 +321,7 @@ public:
   NODISCARD CUDA_HOST_DEVICE Vector fastNormalized() const {
     return Internal::createFromFunc<Vector, N>(
         [inv_length{value_type{1} / norm()},
-         this](const size_type i) -> value_type {
+            this](const size_type i) -> value_type {
           return this->operator[](i) * inv_length;
         });
   }
