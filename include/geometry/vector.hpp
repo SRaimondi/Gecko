@@ -64,6 +64,14 @@ template <const std::size_t N> struct Reduction<N, 2> {
   }
 };
 
+template <const std::size_t I> struct Reduction<1, I> {
+  template <typename ElementFunction, typename ReductionFunction>
+  NODISCARD CUDA_HOST_DEVICE static constexpr auto
+  runReduction(ElementFunction func, ReductionFunction) {
+    return func(0);
+  }
+};
+
 } // namespace Internal
 
 template <typename T, const std::size_t N> class Vector {
@@ -245,7 +253,7 @@ public:
 
   // Horizontal operations
   NODISCARD CUDA_HOST_DEVICE constexpr value_type minElement() const {
-    return Internal::Reduction<0, N>::runReduction(
+    return Internal::Reduction<N>::runReduction(
         [this](const size_type i) -> value_type { return this->operator[](i); },
         [](const value_type &l, const value_type &r) -> value_type {
           using std::min;
@@ -254,7 +262,7 @@ public:
   }
 
   NODISCARD CUDA_HOST_DEVICE constexpr value_type maxElement() const {
-    return Internal::Reduction<0, N>::runReduction(
+    return Internal::Reduction<N>::runReduction(
         [this](const size_type i) -> value_type { return this->operator[](i); },
         [](const value_type &l, const value_type &r) -> value_type {
           using std::max;
@@ -264,7 +272,7 @@ public:
 
   NODISCARD CUDA_HOST_DEVICE constexpr value_type
   dot(const Vector &other) const {
-    return Internal::Reduction<0, N>::runReduction(
+    return Internal::Reduction<N>::runReduction(
         [this, &other](const size_type i) -> value_type {
           return this->operator[](i) * other[i];
         },
@@ -274,7 +282,7 @@ public:
   }
 
   NODISCARD CUDA_HOST_DEVICE constexpr value_type squaredNorm() const {
-    return Internal::Reduction<0, N>::runReduction(
+    return Internal::Reduction<N>::runReduction(
         [this](const size_type i) -> value_type {
           return this->operator[](i) * this->operator[](i);
         },
