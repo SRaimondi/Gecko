@@ -54,7 +54,7 @@ createFromFuncImplementation(Function &&func, std::index_sequence<I...>) {
 }
 
 template <typename Type, const std::size_t N, typename Function,
-    typename Indices = std::make_index_sequence<N>>
+          typename Indices = std::make_index_sequence<N>>
 NODISCARD CUDA_HOST_DEVICE constexpr Type createFromFunc(Function &&func) {
   return createFromFuncImplementation<Type>(std::forward<Function>(func),
                                             Indices{});
@@ -321,7 +321,7 @@ public:
   NODISCARD CUDA_HOST_DEVICE Vector fastNormalized() const {
     return Internal::createFromFunc<Vector, N>(
         [inv_length{value_type{1} / norm()},
-            this](const size_type i) -> value_type {
+         this](const size_type i) -> value_type {
           return this->operator[](i) * inv_length;
         });
   }

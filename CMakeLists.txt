@@ -10,7 +10,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(HEADER_FILES include/common/helper_macros.hpp include/geometry/vector.hpp)
+set(HEADER_FILES
+        include/common/helper_macros.hpp
+        include/geometry/vector.hpp)
 
 set(SOURCE_FILES source/main.cpp)
 
