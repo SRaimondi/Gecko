@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(Gecko LANGUAGES CXX)
+project(Gecko LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,9 +23,11 @@ set(HEADER_FILES )
 set(SOURCE_FILES
         source/main.cpp)
 
+set(GLAD_SOURCE source/glad/glad.c)
+
 set(EXECUTABLE_NAME Gecko)
 
-add_executable(${EXECUTABLE_NAME} ${HEADER_FILES} ${SOURCE_FILES})
+add_executable(${EXECUTABLE_NAME} ${HEADER_FILES} ${GLAD_SOURCE} ${SOURCE_FILES})
 
 target_include_directories(${EXECUTABLE_NAME} PRIVATE include)
 target_include_directories(${EXECUTABLE_NAME}
