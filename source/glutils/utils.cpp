@@ -94,8 +94,8 @@ void APIENTRY GLDebugCallback(const GLenum source, const GLenum type,
     }
   }()};
 
-  spdlog::info("### OpenGL message ### {}: {} [{}]({}): {}", source_str,
-               type_str, severity_str, id, message);
+  spdlog::info("'{}' {} [{}](ID: {}): {}", source_str, type_str, severity_str,
+               id, message);
 }
 
 } // namespace Gecko::Utils

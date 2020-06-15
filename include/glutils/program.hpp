@@ -20,7 +20,7 @@ public:
     link();
   }
 
-  ~GLSLProgram() noexcept { glDeleteProgram(_program_id); }
+  ~GLSLProgram() { glDeleteProgram(_program_id); }
 
   // Not copyable or assignable
   GLSLProgram(const GLSLProgram &) = delete;
