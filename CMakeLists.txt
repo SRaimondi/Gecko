@@ -5,14 +5,24 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# set(CMAKE_CUDA_STANDARD 17)
-# set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(HEADER_FILES include/common/helper_macros.hpp include/geometry/vector.hpp)
+# GLFW
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-set(SOURCE_FILES source/main.cpp)
+add_subdirectory(external/glfw-3.3.2)
+
+# OpenGL
+find_package(OpenGL REQUIRED)
+
+# Project files
+set(HEADER_FILES
+        include/geometry/vector.hpp)
+
+set(SOURCE_FILES
+        source/main.cpp)
 
 set(EXECUTABLE_NAME Gecko)
 
@@ -20,11 +30,8 @@ add_executable(${EXECUTABLE_NAME} ${HEADER_FILES} ${SOURCE_FILES})
 
 target_include_directories(${EXECUTABLE_NAME} PRIVATE include)
 target_include_directories(${EXECUTABLE_NAME}
-        SYSTEM PRIVATE external/spdlog/include)
-
-#set_target_properties(${EXECUTABLE_NAME}
-#        PROPERTIES
-#        CUDA_SEPARABLE_COMPILATION ON)
+        SYSTEM PRIVATE external/spdlog/include
+        SYSTEM PRIVATE external/glm)
 
 # Set warnings
 set(MSVC_WARNINGS
@@ -98,7 +105,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(PROJECT_WARNINGS ${MSVC_WARNINGS})
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message("Building with Clang warnings")
-    set(PROJECT_WARNINGS ${CLANG_WARNINGS})
+    # We disable some very pedantic warnings about C++98 compatibility
+    set(PROJECT_WARNINGS ${CLANG_WARNINGS} -Wno-c++98-compat -Wno-c++98-compat-pedantic)
 else ()
     message("Building with GCC warnings")
     set(PROJECT_WARNINGS ${GCC_WARNINGS})
@@ -106,3 +114,7 @@ endif ()
 
 target_compile_options(${EXECUTABLE_NAME}
         PRIVATE ${PROJECT_WARNINGS})
+
+# Link OpenGL / GLFW libraries
+target_link_libraries(${EXECUTABLE_NAME}
+        PRIVATE glfw OpenGL::GL)
