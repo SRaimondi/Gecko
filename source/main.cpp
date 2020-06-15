@@ -3,7 +3,7 @@
 #include "GLFW/glfw3.h"
 // clang-format on
 
-#include "glutils/glutils.hpp"
+#include "glutils/utils.hpp"
 
 #include "spdlog/spdlog.h"
 

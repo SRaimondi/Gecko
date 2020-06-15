@@ -1,4 +1,4 @@
-#include "glutils/glutils.hpp"
+#include "glutils/utils.hpp"
 #include "spdlog/spdlog.h"
 
 #include <string>

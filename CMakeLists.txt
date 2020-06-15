@@ -18,10 +18,14 @@ add_subdirectory(external/glfw)
 find_package(OpenGL REQUIRED)
 
 # Project files
-set(HEADER_FILES include/glutils/glutils.hpp)
+set(HEADER_FILES
+        include/glutils/utils.hpp
+        include/glutils/shader.hpp)
 
 set(SOURCE_FILES
-        source/main.cpp source/glutils/glutils.cpp)
+        source/main.cpp
+        source/glutils/utils.cpp
+        source/glutils/shader.cpp)
 
 set(GLAD_SOURCE source/glad/glad.c)
 
