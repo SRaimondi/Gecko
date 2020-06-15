@@ -12,14 +12,13 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(external/glfw-3.3.2)
+add_subdirectory(external/glfw)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
 
 # Project files
-set(HEADER_FILES
-        include/geometry/vector.hpp)
+set(HEADER_FILES )
 
 set(SOURCE_FILES
         source/main.cpp)
