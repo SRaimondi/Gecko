@@ -3,6 +3,8 @@
 #include "GLFW/glfw3.h"
 // clang-format on
 
+#include "glutils/glutils.hpp"
+
 #include "spdlog/spdlog.h"
 
 static void processInput(GLFWwindow *const window) {
@@ -13,7 +15,7 @@ static void processInput(GLFWwindow *const window) {
 
 static void glfwErrorCallback([[maybe_unused]] const int error,
                               const char *description) {
-  spdlog::error("GLFW error: %s", description);
+  spdlog::error("GLFW error: {}", description);
 }
 
 static void framebufferSizeCallback([[maybe_unused]] GLFWwindow *window,
@@ -28,12 +30,18 @@ int main() {
     return 1;
   }
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if defined(__APPLE__)
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#else
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 #endif
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  if (GL_ARB_debug_output) {
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+  }
 
   // Create GLFW window
   GLFWwindow *window{glfwCreateWindow(800, 600, "Gecko", nullptr, nullptr)};
@@ -52,6 +60,17 @@ int main() {
     glfwTerminate();
     return 1;
   }
+
+#if !defined(__APPLE__)
+  if (GL_ARB_debug_output) {
+    glDebugMessageCallback(Gecko::Utils::GLDebugCallback, nullptr);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr,
+                          GL_TRUE);
+    glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0,
+                         GL_DEBUG_SEVERITY_NOTIFICATION, -1,
+                         "Debugging enabled");
+  }
+#endif
 
   // Main render loop
   while (!glfwWindowShouldClose(window)) {
