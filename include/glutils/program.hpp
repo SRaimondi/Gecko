@@ -6,7 +6,6 @@ namespace Gecko {
 
 class GLSLProgram {
 public:
-  // Create from shaders
   template <typename... Shaders>
   explicit GLSLProgram(Shaders &&... shaders) : _program_id{glCreateProgram()} {
     static_assert(
@@ -22,10 +21,16 @@ public:
   GLSLProgram(const GLSLProgram &) = delete;
   GLSLProgram &operator=(const GLSLProgram &) = delete;
 
+  void validate() const;
+
+  [[nodiscard]] GLuint getID() const noexcept { return _program_id; }
+
 private:
   GLuint _program_id;
 
   void link() const;
+
+  [[nodiscard]] std::string getProgramLog() const;
 };
 
 } // namespace Gecko

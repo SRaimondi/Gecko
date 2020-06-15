@@ -33,7 +33,7 @@ private:
   const ShaderType _type;
 
   // Create shader from source and type
-  GLSLShader(const std::string &source, ShaderType type);
+  GLSLShader(const std::string& filename, const std::string &source, ShaderType type);
 
   // Get the shader type from the given input file name
   [[nodiscard]] static ShaderType

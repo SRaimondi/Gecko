@@ -19,10 +19,11 @@ GLSLShader GLSLShader::createFromFile(const std::string &filename) {
   }
   const std::string file_source{(std::istreambuf_iterator<char>{shader_file}),
                                 std::istreambuf_iterator<char>{}};
-  return {file_source, extensionToShaderType(filename)};
+  return {filename, file_source, extensionToShaderType(filename)};
 }
 
-GLSLShader::GLSLShader(const std::string &source, const ShaderType type)
+GLSLShader::GLSLShader(const std::string &filename, const std::string &source,
+                       const ShaderType type)
     : _shader_id{glCreateShader(static_cast<GLenum>(type))}, _type{type} {
   const auto source_ptr{reinterpret_cast<const GLchar *>(source.c_str())};
   glShaderSource(_shader_id, 1, &source_ptr, nullptr);
@@ -39,7 +40,7 @@ GLSLShader::GLSLShader(const std::string &source, const ShaderType type)
     glGetShaderInfoLog(_shader_id, compile_log_length, &written, log.data());
     glDeleteShader(_shader_id);
     throw std::runtime_error{
-        fmt::format("Error in shader compilation: {}", log)};
+        fmt::format("Error in shader {} compilation: {}", filename, log)};
   }
 }
 

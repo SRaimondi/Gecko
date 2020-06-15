@@ -78,6 +78,7 @@ int main() {
     const Gecko::GLSLProgram base_program{
         Gecko::GLSLShader::createFromFile("../shaders/base.vert"),
         Gecko::GLSLShader::createFromFile("../shaders/base.frag")};
+    base_program.validate();
 
     // Main render loop
     while (!glfwWindowShouldClose(window)) {
