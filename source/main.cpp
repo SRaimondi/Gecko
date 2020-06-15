@@ -75,7 +75,7 @@ int main() {
 #endif
 
     // Create program
-    const Gecko::GLSLProgram program{
+    const Gecko::GLSLProgram base_program{
         Gecko::GLSLShader::createFromFile("../shaders/base.vert"),
         Gecko::GLSLShader::createFromFile("../shaders/base.frag")};
 
