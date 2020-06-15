@@ -9,8 +9,6 @@
 
 namespace Gecko {
 
-GLSLShader::~GLSLShader() { glDeleteShader(_shader_id); }
-
 GLSLShader GLSLShader::createFromFile(const std::string &filename) {
   std::ifstream shader_file{filename};
   if (!shader_file.is_open()) {

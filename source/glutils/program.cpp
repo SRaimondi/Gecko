@@ -6,8 +6,6 @@
 
 namespace Gecko {
 
-GLSLProgram::~GLSLProgram() { glDeleteProgram(_program_id); }
-
 void GLSLProgram::validate() const {
   glValidateProgram(_program_id);
   GLint validation_value{0};
@@ -38,6 +36,23 @@ std::string GLSLProgram::getProgramLog() const {
   GLint written{0};
   glGetProgramInfoLog(_program_id, log_length, &written, log.data());
   return log;
+}
+
+GLint GLSLProgram::getUniformLocation(const std::string &uniform_name) const {
+  if (const auto it{_uniforms_map.find(uniform_name)};
+      it == _uniforms_map.end()) {
+    if (const GLint uniform_location{
+            glGetUniformLocation(_program_id, uniform_name.c_str())};
+        uniform_location != -1) {
+      _uniforms_map[uniform_name] = uniform_location;
+      return uniform_location;
+    } else {
+      throw std::runtime_error{fmt::format(
+          "Could not determine location for uniform {}", uniform_name)};
+    }
+  } else {
+    return it->second;
+  }
 }
 
 } // namespace Gecko
