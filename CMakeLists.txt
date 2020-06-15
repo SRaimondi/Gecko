@@ -14,18 +14,23 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(external/glfw)
 
+# FMT
+add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
+
 # OpenGL
 find_package(OpenGL REQUIRED)
 
 # Project files
 set(HEADER_FILES
         include/glutils/utils.hpp
-        include/glutils/shader.hpp)
+        include/glutils/shader.hpp
+        include/glutils/program.hpp)
 
 set(SOURCE_FILES
         source/main.cpp
         source/glutils/utils.cpp
-        source/glutils/shader.cpp)
+        source/glutils/shader.cpp
+        source/glutils/program.cpp)
 
 set(GLAD_SOURCE source/glad/glad.c)
 
@@ -36,7 +41,8 @@ add_executable(${EXECUTABLE_NAME} ${HEADER_FILES} ${GLAD_SOURCE} ${SOURCE_FILES}
 target_include_directories(${EXECUTABLE_NAME} PRIVATE include)
 target_include_directories(${EXECUTABLE_NAME}
         SYSTEM PRIVATE external/spdlog/include
-        SYSTEM PRIVATE external/glm)
+        SYSTEM PRIVATE external/glm
+        SYSTEM PRIVATE external/fmt/include)
 
 # Set warnings
 set(MSVC_WARNINGS
@@ -122,4 +128,6 @@ target_compile_options(${EXECUTABLE_NAME}
 
 # Link OpenGL / GLFW libraries
 target_link_libraries(${EXECUTABLE_NAME}
-        PRIVATE glfw OpenGL::GL)
+        PRIVATE glfw
+        PRIVATE OpenGL::GL
+        PRIVATE fmt::fmt-header-only)

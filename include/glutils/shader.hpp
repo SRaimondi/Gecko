@@ -2,9 +2,6 @@
 
 #include "glad/glad.h"
 
-#define GLM_FORCE_RADIANS
-#include "glm/glm.hpp"
-
 #include <string>
 
 namespace Gecko {
@@ -20,14 +17,27 @@ enum class ShaderType : GLenum {
 
 class GLSLShader {
 public:
-  // Not copyable or assignable
+  ~GLSLShader();
+
   GLSLShader(const GLSLShader &) = delete;
   GLSLShader &operator=(const GLSLShader &) = delete;
 
-private:
-  GLuint shader_id;
+  // Factory functions
+  [[nodiscard]] static GLSLShader createFromFile(const std::string &filename);
 
-  static ShaderType extensionToShaderType(const std::string &filename);
+  [[nodiscard]] ShaderType getType() const noexcept { return _type; }
+  [[nodiscard]] GLuint getID() const noexcept { return _shader_id; }
+
+private:
+  GLuint _shader_id;
+  const ShaderType _type;
+
+  // Create shader from source and type
+  GLSLShader(const std::string &source, ShaderType type);
+
+  // Get the shader type from the given input file name
+  [[nodiscard]] static ShaderType
+  extensionToShaderType(const std::string &filename);
 };
 
 } // namespace Gecko
