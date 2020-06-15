@@ -11,8 +11,23 @@ static void processInput(GLFWwindow *const window) {
   }
 }
 
+static void glfwErrorCallback([[maybe_unused]] const int error,
+                              const char *description) {
+  spdlog::error("GLFW error: %s", description);
+}
+
+static void framebufferSizeCallback([[maybe_unused]] GLFWwindow *window,
+                                    const GLsizei width, const GLsizei height) {
+  glViewport(0, 0, width, height);
+}
+
 int main() {
-  glfwInit();
+  glfwSetErrorCallback(glfwErrorCallback);
+  if (!glfwInit()) {
+    spdlog::error("Could not initialize GLFW");
+    return 1;
+  }
+
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -28,6 +43,7 @@ int main() {
     return 1;
   }
   glfwMakeContextCurrent(window);
+  glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
   // Initialize GLAD
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
