@@ -85,20 +85,36 @@ int main() {
     // Create triangle
     GLuint vao;
     glGenVertexArrays(1, &vao);
-    GLuint vertices_vbo;
-    glGenBuffers(1, &vertices_vbo);
+    std::array<GLuint, 2> vbos{0u};
+    glGenBuffers(2, vbos.data());
     {
-      const std::array<float, 9> vertices{-0.5f, -0.5f, 0.f,  0.5f, -0.5f,
-                                          0.f,   0.f,   0.5f, 0.f};
+      // clang-format off
+      const std::array<float, 9> vertices{-0.5f, -0.5f, 0.f,
+                                          0.5f, -0.5f, 0.f,
+                                          0.f, 0.5f, 0.f};
+      const std::array<float, 9> colors{1.f, 0.f, 0.f,
+                                        0.f, 1.f, 0.f,
+                                        0.f, 0.f, 1.f};
+      // clang-format on
+
       // First bind vao array
       glBindVertexArray(vao);
+
       // Now bind vbo and submit data
-      glBindBuffer(GL_ARRAY_BUFFER, vertices_vbo);
+      glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
       glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(),
                    GL_STATIC_DRAW);
       glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
                             nullptr);
       glEnableVertexAttribArray(0);
+
+      glBindBuffer(GL_ARRAY_BUFFER, vbos[1]);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), colors.data(),
+                   GL_STATIC_DRAW);
+      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                            nullptr);
+      glEnableVertexAttribArray(1);
+
       glBindBuffer(GL_ARRAY_BUFFER, 0);
       glBindVertexArray(0);
     }
@@ -119,10 +135,11 @@ int main() {
     }
 
     glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vertices_vbo);
+    glDeleteBuffers(2, vbos.data());
 
     glfwDestroyWindow(window);
     glfwTerminate();
+
   } catch (const std::exception &ex) {
     spdlog::error(ex.what());
   }
