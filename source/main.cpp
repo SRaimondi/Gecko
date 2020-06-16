@@ -157,6 +157,19 @@ int main() {
       }
     }
 
+    // Copy data to OpenGL texture
+    GLuint volume_texture;
+    glGenTextures(1, &volume_texture);
+    glBindTexture(GL_TEXTURE_3D, volume_texture);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, field.xSize(), field.ySize(),
+                 field.zSize(), 0, GL_RED, GL_FLOAT,
+                 reinterpret_cast<void *>(field.data()));
+
     // Create program
     const Gecko::GLSLProgram base_program{
         Gecko::GLSLShader::createFromFile("../shaders/base.vert"),
@@ -226,6 +239,7 @@ int main() {
       glfwPollEvents();
     }
 
+    glDeleteTextures(1, &volume_texture);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(2, vbos.data());
 

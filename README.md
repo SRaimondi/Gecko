@@ -22,6 +22,11 @@
 / / / / / / / / / | | / / / / / / / / / / / / / / / / | | / / / / / / / / /
 ```
 ## TO RUN
+You might have to install OpenGL and some libraries required by GLFW
 ```bash
-rm -rf /
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make
+./Gecko
 ```
