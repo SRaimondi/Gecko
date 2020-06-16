@@ -93,6 +93,7 @@ int main() {
       return 1;
     }
     glfwMakeContextCurrent(window);
+    glfwSetWindowSizeLimits(window, 200, 200, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetKeyCallback(window, glfwKeyCallback);
     glfwSetScrollCallback(window, glfwScrollCallback);
     glfwSetCursorPosCallback(window, glfwMouseCallback);
