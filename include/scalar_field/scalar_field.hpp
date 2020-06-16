@@ -94,6 +94,9 @@ ScalarField<T>::ScalarField(const glm::vec3 &bounds_min,
   if (_num_elements.x <= 2 || _num_elements.y <= 2 || _num_elements.z <= 2) {
     throw std::runtime_error{"Invalid Scalar field size"};
   }
+  if (glm::any(glm::lessThan(_bounds_max, _bounds_min))) {
+    throw std::runtime_error{"Scalar field bounds are invalid"};
+  }
   for (std::size_t i{0}; i != totalElements(); ++i) {
     _elements[i] = default_value;
   }
