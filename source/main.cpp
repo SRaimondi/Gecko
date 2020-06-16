@@ -68,7 +68,7 @@ int main() {
   try {
     glfwSetErrorCallback(glfwErrorCallback);
     if (!glfwInit()) {
-      spdlog::fat_error("Could not initialize GLFW");
+      spdlog::error("Could not initialize GLFW");
       return 1;
     }
 
