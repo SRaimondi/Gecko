@@ -37,7 +37,9 @@ public:
 
   void setLookAt(const glm::vec3 &at) noexcept { _at = at; }
 
-  void changeRadius(const float delta_r) noexcept { _radius += delta_r; }
+  void changeRadius(const float delta_r) noexcept {
+    _radius = std::max(_radius + delta_r, 0.1f);
+  }
 
 private:
   constexpr static float PI{3.1415927410125732421875f};
