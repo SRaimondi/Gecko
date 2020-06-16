@@ -24,13 +24,15 @@ find_package(OpenGL REQUIRED)
 set(HEADER_FILES
         include/glutils/utils.hpp
         include/glutils/shader.hpp
-        include/glutils/program.hpp)
+        include/glutils/program.hpp
+        include/camera/orbit_camera.hpp)
 
 set(SOURCE_FILES
         source/main.cpp
         source/glutils/utils.cpp
         source/glutils/shader.cpp
-        source/glutils/program.cpp)
+        source/glutils/program.cpp
+        source/camera/orbit_camera.cpp)
 
 set(GLAD_SOURCE source/glad/glad.c)
 

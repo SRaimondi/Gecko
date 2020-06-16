@@ -5,25 +5,63 @@
 
 #include "glutils/utils.hpp"
 #include "glutils/program.hpp"
+#include "camera/orbit_camera.hpp"
 
 #include "spdlog/spdlog.h"
 
 #include <array>
-
-static void processInput(GLFWwindow *const window) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-  }
-}
 
 static void glfwErrorCallback([[maybe_unused]] const int error,
                               const char *description) {
   spdlog::error("GLFW error: {}", description);
 }
 
-static void framebufferSizeCallback([[maybe_unused]] GLFWwindow *window,
-                                    const GLsizei width, const GLsizei height) {
-  glViewport(0, 0, width, height);
+static void glfwKeyCallback(GLFWwindow *window, const int key,
+                            [[maybe_unused]] const int scancode,
+                            const int action, [[maybe_unused]] const int mods) {
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
+}
+
+static Gecko::OrbitCamera camera;
+static glm::vec2 previous_mouse_position;
+static int mouse_is_down{0};
+
+static void glfwMouseButtonCallback(GLFWwindow *window, const int button,
+                                    const int action,
+                                    [[maybe_unused]] const int mods) {
+  if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    if (action == GLFW_PRESS) {
+      mouse_is_down = 1;
+      double x, y;
+      glfwGetCursorPos(window, &x, &y);
+      previous_mouse_position.x = static_cast<float>(x);
+      previous_mouse_position.y = static_cast<float>(y);
+    } else if (action == GLFW_RELEASE) {
+      mouse_is_down = 0;
+    }
+  }
+}
+
+static void glfwMouseCallback([[maybe_unused]] GLFWwindow *window,
+                              const double xpos, const double ypos) {
+  if (mouse_is_down) {
+    const float x_offset{static_cast<float>(xpos) - previous_mouse_position.x};
+    const float y_offset{static_cast<float>(ypos) - previous_mouse_position.y};
+    previous_mouse_position.x = static_cast<float>(xpos);
+    previous_mouse_position.y = static_cast<float>(ypos);
+    constexpr static float CAMERA_SENSITIVITY{0.01f};
+    camera.rotateVertical(CAMERA_SENSITIVITY * x_offset);
+    camera.rotateHorizontal(-CAMERA_SENSITIVITY * y_offset);
+  }
+}
+
+static void glfwScrollCallback([[maybe_unused]] GLFWwindow *window,
+                               [[maybe_unused]] const double xoffset,
+                               const double yoffset) {
+  constexpr static float SCROLL_SENSITIVITY{0.1f};
+  camera.changeRadius(SCROLL_SENSITIVITY * static_cast<float>(-yoffset));
 }
 
 int main() {
@@ -55,7 +93,10 @@ int main() {
       return 1;
     }
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glfwSetKeyCallback(window, glfwKeyCallback);
+    glfwSetScrollCallback(window, glfwScrollCallback);
+    glfwSetCursorPosCallback(window, glfwMouseCallback);
+    glfwSetMouseButtonCallback(window, glfwMouseButtonCallback);
 
     // Initialize GLAD
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
@@ -121,12 +162,22 @@ int main() {
 
     // Main render loop
     while (!glfwWindowShouldClose(window)) {
-      processInput(window);
-
-      glClearColor(0.2f, 0.3f, 0.3f, 1.f);
+      glClearColor(0.1f, 0.1f, 0.1f, 1.f);
       glClear(GL_COLOR_BUFFER_BIT);
 
       base_program.use();
+      base_program.setMat4("model_matrix", glm::identity<glm::mat4>());
+      base_program.setMat4("view_matrix", camera.getViewMatrix());
+      // Update perspective matrix
+      int framebuffer_width, framebuffer_height;
+      glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
+      glViewport(0, 0, framebuffer_width, framebuffer_height);
+      base_program.setMat4(
+          "projection_matrix",
+          glm::perspectiveFov(
+              glm::radians(60.f), static_cast<float>(framebuffer_width),
+              static_cast<float>(framebuffer_height), 0.1f, 100.f));
+
       glBindVertexArray(vao);
       glDrawArrays(GL_TRIANGLES, 0, 3);
 

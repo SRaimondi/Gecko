@@ -39,20 +39,17 @@ std::string GLSLProgram::getProgramLog() const {
 }
 
 GLint GLSLProgram::getUniformLocation(const std::string &uniform_name) const {
-  if (const auto it{_uniforms_map.find(uniform_name)};
-      it == _uniforms_map.end()) {
-    if (const GLint uniform_location{
-            glGetUniformLocation(_program_id, uniform_name.c_str())};
-        uniform_location != -1) {
-      _uniforms_map[uniform_name] = uniform_location;
-      return uniform_location;
-    } else {
+  const auto it{_uniforms_map.find(uniform_name)};
+  if (it == _uniforms_map.end()) {
+    const GLint uniform_location{
+        glGetUniformLocation(_program_id, uniform_name.c_str())};
+    if (uniform_location == -1) {
       throw std::runtime_error{fmt::format(
           "Could not determine location for uniform {}", uniform_name)};
     }
-  } else {
-    return it->second;
+    return uniform_location;
   }
+  return it->second;
 }
 
 } // namespace Gecko
