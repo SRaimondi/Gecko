@@ -25,7 +25,8 @@ set(HEADER_FILES
         include/glutils/utils.hpp
         include/glutils/shader.hpp
         include/glutils/program.hpp
-        include/camera/orbit_camera.hpp)
+        include/camera/orbit_camera.hpp
+        include/scalar_field/scalar_field.hpp)
 
 set(SOURCE_FILES
         source/main.cpp

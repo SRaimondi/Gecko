@@ -6,6 +6,7 @@
 #include "glutils/utils.hpp"
 #include "glutils/program.hpp"
 #include "camera/orbit_camera.hpp"
+#include "scalar_field/scalar_field.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -117,6 +118,34 @@ int main() {
                            "Debugging enabled");
     }
 #endif
+
+    // Create example field
+    Gecko::ScalarField<float> field{
+        glm::vec3{-1.f}, glm::vec3{1.f}, 256, 256, 256, 0.f};
+
+    constexpr static std::array<glm::vec3, 4> exp_centers{
+        glm::vec3{-0.6f, -0.5f, -1.f}, glm::vec3{0.3f, 0.5f, 0.3f},
+        glm::vec3{0.8f, 0.8f, -0.1f}, glm::vec3{-0.2f, -0.3f, 0.7f}};
+    constexpr static std::array<float, 4> exp_max{3.f, 1.f, 2.f, 5.f};
+    constexpr static std::array<float, 4> exp_c{0.2f, 0.3f, 0.1f, 0.6f};
+    for (int k{0}; k != field.zSize(); ++k) {
+      for (int j{0}; j != field.ySize(); ++j) {
+        for (int i{0}; i != field.xSize(); ++i) {
+          const glm::vec3 p{field.computeElementPosition(i, j, k)};
+          const auto gaussian = [](const float x, const float a, const float b,
+                                   const float c) -> float {
+            const float t{x - b};
+            return a * std::exp(-t * t / (2.f * c * c));
+          };
+          float value{0.f};
+          for (std::size_t g_i{0}; g_i != exp_centers.size(); ++g_i) {
+            const float l{glm::length(exp_centers[g_i] - p)};
+            value = std::max(value, gaussian(l, exp_max[g_i], 0.f, exp_c[g_i]));
+          }
+          field(i, j, k) = value;
+        }
+      }
+    }
 
     // Create program
     const Gecko::GLSLProgram base_program{
