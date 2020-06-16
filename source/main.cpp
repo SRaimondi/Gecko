@@ -123,32 +123,36 @@ int main() {
     Gecko::ScalarField<float> field{
         glm::vec3{-1.f}, glm::vec3{1.f}, 256, 256, 256, 0.f};
 
-    constexpr static std::array<glm::vec3, 4> exp_centers{
-        glm::vec3{-0.6f, -0.5f, -1.f}, glm::vec3{0.3f, 0.5f, 0.3f},
-        glm::vec3{0.8f, 0.8f, -0.1f}, glm::vec3{-0.2f, -0.3f, 0.7f}};
-    constexpr static std::array<float, 4> exp_max{3.f, 1.f, 2.f, 5.f};
-    constexpr static std::array<float, 4> exp_c{0.2f, 0.3f, 0.1f, 0.6f};
+    {
+      constexpr static std::array<glm::vec3, 4> exp_centers{
+          glm::vec3{-0.6f, -0.5f, -1.f}, glm::vec3{0.3f, 0.5f, 0.3f},
+          glm::vec3{0.8f, 0.8f, -0.1f}, glm::vec3{-0.2f, -0.3f, 0.7f}};
+      constexpr static std::array<float, 4> exp_max{3.f, 1.f, 2.f, 5.f};
+      constexpr static std::array<float, 4> exp_c{0.2f, 0.3f, 0.1f, 0.6f};
 
-    const glm::vec3 voxel_size{field.computeVoxelSize()};
-    for (int k{0}; k != field.zSize(); ++k) {
-      const float z_pos{field.min().z + static_cast<float>(k) * voxel_size.z};
-      for (int j{0}; j != field.ySize(); ++j) {
-        const float y_pos{field.min().y + static_cast<float>(j) * voxel_size.y};
-        for (int i{0}; i != field.xSize(); ++i) {
-          const float x_pos{field.min().x +
-                            static_cast<float>(i) * voxel_size.x};
-          const auto gaussian = [](const float x, const float a, const float b,
-                                   const float c) -> float {
-            const float t{x - b};
-            return a * std::exp(-t * t / (2.f * c * c));
-          };
-          float value{0.f};
-          const glm::vec3 p{x_pos, y_pos, z_pos};
-          for (std::size_t g_i{0}; g_i != exp_centers.size(); ++g_i) {
-            value = std::max(value, gaussian(glm::length(exp_centers[g_i] - p),
-                                             exp_max[g_i], 0.f, exp_c[g_i]));
+      const glm::vec3 voxel_size{field.computeVoxelSize()};
+      for (int k{0}; k != field.zSize(); ++k) {
+        const float z_pos{field.min().z + static_cast<float>(k) * voxel_size.z};
+        for (int j{0}; j != field.ySize(); ++j) {
+          const float y_pos{field.min().y +
+                            static_cast<float>(j) * voxel_size.y};
+          for (int i{0}; i != field.xSize(); ++i) {
+            const float x_pos{field.min().x +
+                              static_cast<float>(i) * voxel_size.x};
+            const auto gaussian = [](const float x, const float a,
+                                     const float b, const float c) -> float {
+              const float t{x - b};
+              return a * std::exp(-t * t / (2.f * c * c));
+            };
+            float value{0.f};
+            const glm::vec3 p{x_pos, y_pos, z_pos};
+            for (std::size_t g_i{0}; g_i != exp_centers.size(); ++g_i) {
+              value =
+                  std::max(value, gaussian(glm::length(exp_centers[g_i] - p),
+                                           exp_max[g_i], 0.f, exp_c[g_i]));
+            }
+            field(i, j, k) = value;
           }
-          field(i, j, k) = value;
         }
       }
     }
