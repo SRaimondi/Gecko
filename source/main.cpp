@@ -89,17 +89,24 @@ int main() {
       glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
     }
 #endif
+    glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Create GLFW window
-    GLFWwindow *window{glfwCreateWindow(800, 600, "Gecko", nullptr, nullptr)};
+    constexpr static int INITIAL_WIDTH{800};
+    constexpr static int INITIAL_HEIGHT{800};
+    GLFWwindow *window{glfwCreateWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "Gecko",
+                                        nullptr, nullptr)};
     if (window == nullptr) {
       spdlog::error("Could not create GLFW window");
       glfwTerminate();
       return 1;
     }
     glfwMakeContextCurrent(window);
-    glfwSetWindowSizeLimits(window, 200, 200, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    constexpr static int MINIMUM_WIDTH{800};
+    constexpr static int MINIMUM_HEIGHT{800};
+    glfwSetWindowSizeLimits(window, MINIMUM_WIDTH, MINIMUM_HEIGHT,
+                            GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetKeyCallback(window, glfwKeyCallback);
     glfwSetScrollCallback(window, glfwScrollCallback);
     glfwSetCursorPosCallback(window, glfwMouseCallback);
@@ -294,7 +301,7 @@ int main() {
 
     glDeleteTextures(1, &volume_texture);
     glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, buffers.data());
+    glDeleteBuffers(buffers.size(), buffers.data());
 
     glfwDestroyWindow(window);
     glfwTerminate();
