@@ -21,18 +21,26 @@ static void glfwErrorCallback([[maybe_unused]] const int error,
   spdlog::error("GLFW error: {}", description);
 }
 
+static Gecko::OrbitCamera camera{glm::vec3{0.f, 0.f, 10.f},
+                                 glm::zero<glm::vec3>()};
+static glm::vec2 previous_mouse_position;
+static int mouse_is_down{0};
+static int shift_is_down{0};
+
 static void glfwKeyCallback(GLFWwindow *window, const int key,
                             [[maybe_unused]] const int scancode,
                             const int action, [[maybe_unused]] const int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
+  if (key == GLFW_KEY_LEFT_SHIFT) {
+    if (action == GLFW_PRESS) {
+      shift_is_down = 1;
+    } else if (action == GLFW_RELEASE) {
+      shift_is_down = 0;
+    }
+  }
 }
-
-static Gecko::OrbitCamera camera{glm::vec3{0.f, 0.f, 10.f},
-                                 glm::zero<glm::vec3>()};
-static glm::vec2 previous_mouse_position;
-static int mouse_is_down{0};
 
 static void glfwMouseButtonCallback(GLFWwindow *window, const int button,
                                     const int action,
@@ -52,14 +60,19 @@ static void glfwMouseButtonCallback(GLFWwindow *window, const int button,
 
 static void glfwMouseCallback([[maybe_unused]] GLFWwindow *window,
                               const double xpos, const double ypos) {
+  constexpr static float CAMERA_SENSITIVITY{0.01f};
   if (mouse_is_down) {
     const float x_offset{static_cast<float>(xpos) - previous_mouse_position.x};
     const float y_offset{static_cast<float>(ypos) - previous_mouse_position.y};
     previous_mouse_position.x = static_cast<float>(xpos);
     previous_mouse_position.y = static_cast<float>(ypos);
-    constexpr static float CAMERA_SENSITIVITY{0.01f};
-    camera.rotateVertical(CAMERA_SENSITIVITY * x_offset);
-    camera.rotateHorizontal(-CAMERA_SENSITIVITY * y_offset);
+    if (shift_is_down) {
+      camera.moveRight(-CAMERA_SENSITIVITY * x_offset);
+      camera.moveUp(CAMERA_SENSITIVITY * y_offset);
+    } else {
+      camera.rotateVertical(CAMERA_SENSITIVITY * x_offset);
+      camera.rotateHorizontal(-CAMERA_SENSITIVITY * y_offset);
+    }
   }
 }
 
@@ -143,7 +156,7 @@ int main() {
                                     glm::vec3{1.f, 1.f, 2.f},
                                     256,
                                     256,
-                                    256,
+                                    512,
                                     0.f};
 
     //    {

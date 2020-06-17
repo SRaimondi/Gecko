@@ -35,15 +35,32 @@ public:
     _theta = std::clamp(_theta + delta_theta, 0.f, PI);
   }
 
-  void setLookAt(const glm::vec3 &at) noexcept { _at = at; }
+  void moveRight(const float delta) noexcept {
+    _at += delta * computeLocalRightVector();
+  }
 
-  void changeRadius(const float delta_r) noexcept {
-    _radius = std::max(_radius + delta_r, 0.1f);
+  void moveUp(const float delta) noexcept {
+    _at += delta * glm::vec3{0.f, 1.f, 0.f};
+  }
+
+  void changeRadius(const float delta_r,
+                    const float min_radius = 0.1f) noexcept {
+    _radius = std::max(_radius + delta_r, min_radius);
   }
 
 private:
   constexpr static float PI{3.1415927410125732421875f};
   constexpr static float TWO_PI{2.f * PI};
+
+  [[nodiscard]] glm::vec3 computeLocalRightVector() const noexcept {
+    return {std::sin(_phi), 0.f, -std::cos(_phi)};
+  }
+
+  [[nodiscard]] glm::vec3 computeLocalUpVector() const noexcept {
+    const float cos_theta{std::cos(_theta)};
+    return {-cos_theta * std::cos(_phi), std::sin(_theta),
+            -cos_theta * std::sin(_phi)};
+  }
 
   glm::vec3 _at;
   float _phi, _theta;
