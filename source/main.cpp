@@ -268,7 +268,6 @@ int main() {
     // From the field, compute the model matrix
     const glm::mat4 M{field.computeModelMatrix()};
     const glm::mat4 MI{glm::inverse(M)};
-    base_program.setMat4("model_matrix", M);
 
     // Main render loop
     double prev_time{glfwGetTime()};
@@ -277,11 +276,10 @@ int main() {
       glClearColor(0.1f, 0.1f, 0.1f, 1.f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      const auto eye_view_matrix{camera.getEyeAndViewMatrix()};
-      base_program.setMat4("view_matrix", eye_view_matrix.second);
-      base_program.setVec3(
-          "eye_model_space",
-          glm::vec3{MI * glm::vec4{eye_view_matrix.first, 1.f}});
+      // Get view matrix
+      const auto [eye, V]{camera.getEyeAndViewMatrix()};
+      base_program.setVec3("eye_model_space",
+                           glm::vec3{MI * glm::vec4{eye, 1.f}});
       // Update perspective matrix
       int framebuffer_width, framebuffer_height;
       glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
@@ -289,7 +287,7 @@ int main() {
       const glm::mat4 P{glm::perspectiveFov(
           glm::radians(60.f), static_cast<float>(framebuffer_width),
           static_cast<float>(framebuffer_height), 0.1f, 100.f)};
-      base_program.setMat4("projection_matrix", P);
+      base_program.setMat4("MVP", P * V * M);
 
       glBindVertexArray(vao);
       glActiveTexture(GL_TEXTURE0);
