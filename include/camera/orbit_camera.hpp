@@ -43,6 +43,8 @@ public:
     _at += delta * glm::vec3{0.f, 1.f, 0.f};
   }
 
+  void resetAt() noexcept { _at.x = _at.y = _at.z = 0.f; }
+
   void changeRadius(const float delta_r,
                     const float min_radius = 0.1f) noexcept {
     _radius = std::max(_radius + delta_r, min_radius);
