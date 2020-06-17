@@ -267,6 +267,7 @@ int main() {
     // From the field, compute the model matrix
     const glm::mat4 M{field.computeModelMatrix()};
     base_program.setMat4("model_matrix", M);
+   // base_program.setMat4("inverse_model_matrix", glm::inverse(M));
 
     // Main render loop
     double prev_time{glfwGetTime()};
@@ -275,16 +276,18 @@ int main() {
       glClearColor(0.1f, 0.1f, 0.1f, 1.f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      base_program.setMat4("view_matrix", camera.getViewMatrix());
+      const glm::mat4 V{camera.getViewMatrix()};
+      base_program.setMat4("view_matrix", V);
       // Update perspective matrix
       int framebuffer_width, framebuffer_height;
       glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
       glViewport(0, 0, framebuffer_width, framebuffer_height);
-      base_program.setMat4(
-          "projection_matrix",
-          glm::perspectiveFov(
-              glm::radians(60.f), static_cast<float>(framebuffer_width),
-              static_cast<float>(framebuffer_height), 0.1f, 100.f));
+      const glm::mat4 P{glm::perspectiveFov(
+          glm::radians(60.f), static_cast<float>(framebuffer_width),
+          static_cast<float>(framebuffer_height), 0.1f, 100.f)};
+      base_program.setMat4("projection_matrix", P);
+      base_program.setMat4("inverse_view_projection_matrix",
+                           glm::inverse(P * V));
 
       glBindVertexArray(vao);
       glActiveTexture(GL_TEXTURE0);
