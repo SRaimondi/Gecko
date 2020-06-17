@@ -287,8 +287,13 @@ int main() {
               static_cast<float>(framebuffer_height), 0.1f, 100.f));
 
       glBindVertexArray(vao);
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_3D, volume_texture);
       glDrawElements(GL_TRIANGLES, cube_indices.size(), GL_UNSIGNED_INT,
                      nullptr);
+
+      glBindTexture(GL_TEXTURE_3D, 0);
+      glBindVertexArray(0);
 
       glfwSwapBuffers(window);
       glfwPollEvents();
