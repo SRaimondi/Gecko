@@ -119,6 +119,7 @@ int main() {
       return 1;
     }
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(0);
     constexpr static int MINIMUM_WIDTH{200};
     constexpr static int MINIMUM_HEIGHT{200};
     glfwSetWindowSizeLimits(window, MINIMUM_WIDTH, MINIMUM_HEIGHT,
@@ -167,7 +168,7 @@ int main() {
           glm::vec3{-0.6f, -0.5f, -1.5f}, glm::vec3{0.3f, 0.5f, 0.3f},
           glm::vec3{0.8f, 0.8f, -0.1f}, glm::vec3{-0.2f, -0.3f, 1.2f}};
       constexpr static std::array<float, 4> exp_max{3.f, 1.f, 2.f, 5.f};
-      constexpr static std::array<float, 4> exp_c{0.2f, 0.3f, 0.1f, 0.6f};
+      constexpr static std::array<float, 4> exp_c{1.2f, 0.3f, 0.1f, 0.6f};
 
       for (int k{0}; k != field.zSize(); ++k) {
         const float z_pos{field.min().z +
@@ -268,6 +269,8 @@ int main() {
     base_program.setMat4("model_matrix", M);
 
     // Main render loop
+    double prev_time{glfwGetTime()};
+    int num_frames{0};
     while (!glfwWindowShouldClose(window)) {
       glClearColor(0.1f, 0.1f, 0.1f, 1.f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -289,6 +292,18 @@ int main() {
 
       glfwSwapBuffers(window);
       glfwPollEvents();
+
+      const double current_time{glfwGetTime()};
+      const double delta_time{current_time - prev_time};
+      ++num_frames;
+      if (delta_time > 0.5) {
+        const std::string title{
+            fmt::format("Gecko (FPS: {:.2f})",
+                        static_cast<double>(num_frames) / delta_time)};
+        glfwSetWindowTitle(window, title.c_str());
+        prev_time = current_time;
+        num_frames = 0;
+      }
     }
 
     glDeleteTextures(1, &volume_texture);
