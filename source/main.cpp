@@ -29,7 +29,8 @@ static void glfwKeyCallback(GLFWwindow *window, const int key,
   }
 }
 
-static Gecko::OrbitCamera camera;
+static Gecko::OrbitCamera camera{glm::vec3{0.f, 0.f, 10.f},
+                                 glm::zero<glm::vec3>()};
 static glm::vec2 previous_mouse_position;
 static int mouse_is_down{0};
 
@@ -84,11 +85,11 @@ int main() {
 #else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-#endif
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     if (GL_ARB_debug_output) {
       glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
     }
+#endif
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Create GLFW window
     GLFWwindow *window{glfwCreateWindow(800, 600, "Gecko", nullptr, nullptr)};
@@ -112,6 +113,13 @@ int main() {
       return 1;
     }
 
+    // Enable depth test
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
+
+    // Print message if debugging is enabled
 #if !defined(__APPLE__)
     if (GL_ARB_debug_output) {
       glDebugMessageCallback(Gecko::Utils::GLDebugCallback, nullptr);
@@ -134,15 +142,15 @@ int main() {
       constexpr static std::array<float, 4> exp_max{3.f, 1.f, 2.f, 5.f};
       constexpr static std::array<float, 4> exp_c{0.2f, 0.3f, 0.1f, 0.6f};
 
-      const glm::vec3 voxel_size{field.computeVoxelSize()};
       for (int k{0}; k != field.zSize(); ++k) {
-        const float z_pos{field.min().z + static_cast<float>(k) * voxel_size.z};
+        const float z_pos{field.min().z +
+                          static_cast<float>(k) * field.getVoxelSize().z};
         for (int j{0}; j != field.ySize(); ++j) {
           const float y_pos{field.min().y +
-                            static_cast<float>(j) * voxel_size.y};
+                            static_cast<float>(j) * field.getVoxelSize().y};
           for (int i{0}; i != field.xSize(); ++i) {
             const float x_pos{field.min().x +
-                              static_cast<float>(i) * voxel_size.x};
+                              static_cast<float>(i) * field.getVoxelSize().x};
             const auto gaussian = [](const float x, const float a,
                                      const float b, const float c) -> float {
               const float t{x - b};
@@ -182,49 +190,89 @@ int main() {
     // Create triangle
     GLuint vao;
     glGenVertexArrays(1, &vao);
-    std::array<GLuint, 2> vbos{0u};
-    glGenBuffers(2, vbos.data());
-    {
-      // clang-format off
-      const std::array<float, 9> vertices{-0.5f, -0.5f, 0.f,
-                                          0.5f, -0.5f, 0.f,
-                                          0.f, 0.5f, 0.f};
-      const std::array<float, 9> colors{1.f, 0.f, 0.f,
-                                        0.f, 1.f, 0.f,
-                                        0.f, 0.f, 1.f};
-      // clang-format on
+    static constexpr std::size_t VBO_INDEX{0};
+    static constexpr std::size_t EBO_INDEX{1};
+    std::array<GLuint, 2> buffers{0};
+    glGenBuffers(buffers.size(), buffers.data());
 
-      // First bind vao array
-      glBindVertexArray(vao);
+    const std::array<glm::vec3, 48> cube_data{
+        // Right face
+        glm::vec3{1.f, -1.f, -1.f}, glm::vec3{1.f, 0.f, 0.f},
+        glm::vec3{1.f, 1.f, -1.f}, glm::vec3{1.f, 0.f, 0.f},
+        glm::vec3{1.f, 1.f, 1.f}, glm::vec3{1.f, 0.f, 0.f},
+        glm::vec3{1.f, -1.f, 1.f}, glm::vec3{1.f, 0.f, 0.f},
+        // Left face
+        glm::vec3{-1.f, -1.f, -1.f}, glm::vec3{-1.f, 0.f, 0.f},
+        glm::vec3{-1.f, -1.f, 1.f}, glm::vec3{-1.f, 0.f, 0.f},
+        glm::vec3{-1.f, 1.f, 1.f}, glm::vec3{-1.f, 0.f, 0.f},
+        glm::vec3{-1.f, 1.f, -1.f}, glm::vec3{-1.f, 0.f, 0.f},
+        // Front face
+        glm::vec3{-1.f, -1.f, 1.f}, glm::vec3{0.f, 0.f, 1.f},
+        glm::vec3{1.f, -1.f, 1.f}, glm::vec3{0.f, 0.f, 1.f},
+        glm::vec3{1.f, 1.f, 1.f}, glm::vec3{0.f, 0.f, 1.f},
+        glm::vec3{-1.f, 1.f, 1.f}, glm::vec3{0.f, 0.f, 1.f},
+        // Back face
+        glm::vec3{-1.f, -1.f, -1.f}, glm::vec3{0.f, 0.f, -1.f},
+        glm::vec3{1.f, -1.f, -1.f}, glm::vec3{0.f, 0.f, -1.f},
+        glm::vec3{1.f, 1.f, -1.f}, glm::vec3{0.f, 0.f, -1.f},
+        glm::vec3{-1.f, 1.f, -1.f}, glm::vec3{0.f, 0.f, -1.f},
+        // Top face
+        glm::vec3{-1.f, 1.f, 1.f}, glm::vec3{0.f, 1.f, 0.f},
+        glm::vec3{1.f, 1.f, 1.f}, glm::vec3{0.f, 1.f, 0.f},
+        glm::vec3{1.f, 1.f, -1.f}, glm::vec3{0.f, 1.f, 0.f},
+        glm::vec3{-1.f, 1.f, -1.f}, glm::vec3{0.f, 1.f, 0.f},
+        // Bottom face
+        glm::vec3{-1.f, -1.f, 1.f}, glm::vec3{0.f, -1.f, 0.f},
+        glm::vec3{-1.f, -1.f, -1.f}, glm::vec3{0.f, -1.f, 0.f},
+        glm::vec3{1.f, -1.f, -1.f}, glm::vec3{0.f, -1.f, 0.f},
+        glm::vec3{1.f, -1.f, 1.f}, glm::vec3{0.f, -1.f, 0.f}};
+    const std::array<unsigned int, 36> cube_indices{// Right face
+                                                    0, 1, 2, 0, 2, 3,
+                                                    // Left face
+                                                    4, 5, 6, 4, 6, 7,
+                                                    // Front face
+                                                    8, 9, 11, 9, 10, 11,
+                                                    // Back face
+                                                    12, 15, 14, 12, 14, 13,
+                                                    // Top face
+                                                    16, 17, 19, 17, 18, 19,
+                                                    // Bottom face
+                                                    20, 21, 22, 20, 22, 23};
 
-      // Now bind vbo and submit data
-      glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
-      glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float),
-                   vertices.data(), GL_STATIC_DRAW);
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
-                            nullptr);
-      glEnableVertexAttribArray(0);
+    // First bind vao array
+    glBindVertexArray(vao);
 
-      glBindBuffer(GL_ARRAY_BUFFER, vbos[1]);
-      glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(float),
-                   colors.data(), GL_STATIC_DRAW);
-      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
-                            nullptr);
-      glEnableVertexAttribArray(1);
+    // Now bind vbo and submit data
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[VBO_INDEX]);
+    glBufferData(GL_ARRAY_BUFFER, cube_data.size() * sizeof(glm::vec3),
+                 cube_data.data(), GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3),
+                          reinterpret_cast<void *>(0));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3),
+                          reinterpret_cast<void *>(sizeof(glm::vec3)));
 
-      base_program.validate();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[EBO_INDEX]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 cube_indices.size() * sizeof(unsigned int),
+                 cube_indices.data(), GL_STATIC_DRAW);
 
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
-      glBindVertexArray(0);
-    }
+    base_program.validate();
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
     // Main render loop
     while (!glfwWindowShouldClose(window)) {
       glClearColor(0.1f, 0.1f, 0.1f, 1.f);
-      glClear(GL_COLOR_BUFFER_BIT);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       base_program.use();
-      base_program.setMat4("model_matrix", glm::identity<glm::mat4>());
+      const glm::mat4 M{glm::identity<glm::mat4>()};
+      base_program.setMat4("model_matrix", M);
+      base_program.setMat3("normal_matrix",
+                           glm::transpose(glm::inverse(glm::mat3{M})));
       base_program.setMat4("view_matrix", camera.getViewMatrix());
       // Update perspective matrix
       int framebuffer_width, framebuffer_height;
@@ -237,7 +285,8 @@ int main() {
               static_cast<float>(framebuffer_height), 0.1f, 100.f));
 
       glBindVertexArray(vao);
-      glDrawArrays(GL_TRIANGLES, 0, 3);
+      glDrawElements(GL_TRIANGLES, cube_indices.size(), GL_UNSIGNED_INT,
+                     nullptr);
 
       glfwSwapBuffers(window);
       glfwPollEvents();
@@ -245,7 +294,7 @@ int main() {
 
     glDeleteTextures(1, &volume_texture);
     glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(2, vbos.data());
+    glDeleteBuffers(1, buffers.data());
 
     glfwDestroyWindow(window);
     glfwTerminate();
