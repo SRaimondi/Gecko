@@ -103,8 +103,8 @@ int main() {
       return 1;
     }
     glfwMakeContextCurrent(window);
-    constexpr static int MINIMUM_WIDTH{800};
-    constexpr static int MINIMUM_HEIGHT{800};
+    constexpr static int MINIMUM_WIDTH{200};
+    constexpr static int MINIMUM_HEIGHT{200};
     glfwSetWindowSizeLimits(window, MINIMUM_WIDTH, MINIMUM_HEIGHT,
                             GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetKeyCallback(window, glfwKeyCallback);
