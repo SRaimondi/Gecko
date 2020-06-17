@@ -225,23 +225,24 @@ int main() {
     std::array<GLuint, 2> buffers{0};
     glGenBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
 
-    const std::array<glm::vec3, 8> cube_data{
+    constexpr static std::array<glm::vec3, 8> cube_data{
         glm::vec3{0.f, 0.f, 0.f}, glm::vec3{1.f, 0.f, 0.f},
         glm::vec3{0.f, 1.f, 0.f}, glm::vec3{1.f, 1.f, 0.f},
         glm::vec3{0.f, 0.f, 1.f}, glm::vec3{1.f, 0.f, 1.f},
         glm::vec3{0.f, 1.f, 1.f}, glm::vec3{1.f, 1.f, 1.f}};
-    const std::array<unsigned int, 36> cube_indices{// Back face
-                                                    0, 2, 1, 1, 2, 3,
-                                                    // Right face
-                                                    1, 3, 7, 7, 5, 1,
-                                                    // Top face
-                                                    6, 7, 2, 2, 7, 3,
-                                                    // Left face
-                                                    6, 0, 4, 2, 0, 6,
-                                                    // Bottom face
-                                                    4, 0, 5, 5, 0, 1,
-                                                    // Front face
-                                                    6, 4, 5, 6, 5, 7};
+    constexpr static std::array<unsigned int, 36> cube_indices{// Back face
+                                                               0, 2, 1, 1, 2, 3,
+                                                               // Right face
+                                                               1, 3, 7, 7, 5, 1,
+                                                               // Top face
+                                                               6, 7, 2, 2, 7, 3,
+                                                               // Left face
+                                                               6, 0, 4, 2, 0, 6,
+                                                               // Bottom face
+                                                               4, 0, 5, 5, 0, 1,
+                                                               // Front face
+                                                               6, 4, 5, 6, 5,
+                                                               7};
 
     // First bind vao array
     glBindVertexArray(vao);
@@ -278,9 +279,9 @@ int main() {
 
       const auto eye_view_matrix{camera.getEyeAndViewMatrix()};
       base_program.setMat4("view_matrix", eye_view_matrix.second);
-//      base_program.setVec3(
-//          "eye_model_space",
-//          glm::vec3{MI * glm::vec4{eye_view_matrix.first, 1.f}});
+      base_program.setVec3(
+          "eye_model_space",
+          glm::vec3{MI * glm::vec4{eye_view_matrix.first, 1.f}});
       // Update perspective matrix
       int framebuffer_width, framebuffer_height;
       glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
