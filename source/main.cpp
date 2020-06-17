@@ -191,8 +191,8 @@ int main() {
 
     // Create program
     const Gecko::GLSLProgram base_program{
-        Gecko::GLSLShader::createFromFile("../shaders/base.vert"),
-        Gecko::GLSLShader::createFromFile("../shaders/base.frag")};
+        Gecko::GLSLShader::createFromFile("../shaders/volume_render.vert"),
+        Gecko::GLSLShader::createFromFile("../shaders/volume_render.frag")};
 
     // Create triangle
     GLuint vao;
@@ -202,49 +202,23 @@ int main() {
     std::array<GLuint, 2> buffers{0};
     glGenBuffers(buffers.size(), buffers.data());
 
-    const std::array<glm::vec3, 48> cube_data{
-        // Right face
-        glm::vec3{1.f, -1.f, -1.f}, glm::vec3{1.f, 0.f, 0.f},
-        glm::vec3{1.f, 1.f, -1.f}, glm::vec3{1.f, 0.f, 0.f},
-        glm::vec3{1.f, 1.f, 1.f}, glm::vec3{1.f, 0.f, 0.f},
-        glm::vec3{1.f, -1.f, 1.f}, glm::vec3{1.f, 0.f, 0.f},
-        // Left face
-        glm::vec3{-1.f, -1.f, -1.f}, glm::vec3{-1.f, 0.f, 0.f},
-        glm::vec3{-1.f, -1.f, 1.f}, glm::vec3{-1.f, 0.f, 0.f},
-        glm::vec3{-1.f, 1.f, 1.f}, glm::vec3{-1.f, 0.f, 0.f},
-        glm::vec3{-1.f, 1.f, -1.f}, glm::vec3{-1.f, 0.f, 0.f},
-        // Front face
-        glm::vec3{-1.f, -1.f, 1.f}, glm::vec3{0.f, 0.f, 1.f},
-        glm::vec3{1.f, -1.f, 1.f}, glm::vec3{0.f, 0.f, 1.f},
-        glm::vec3{1.f, 1.f, 1.f}, glm::vec3{0.f, 0.f, 1.f},
-        glm::vec3{-1.f, 1.f, 1.f}, glm::vec3{0.f, 0.f, 1.f},
-        // Back face
-        glm::vec3{-1.f, -1.f, -1.f}, glm::vec3{0.f, 0.f, -1.f},
-        glm::vec3{1.f, -1.f, -1.f}, glm::vec3{0.f, 0.f, -1.f},
-        glm::vec3{1.f, 1.f, -1.f}, glm::vec3{0.f, 0.f, -1.f},
-        glm::vec3{-1.f, 1.f, -1.f}, glm::vec3{0.f, 0.f, -1.f},
-        // Top face
-        glm::vec3{-1.f, 1.f, 1.f}, glm::vec3{0.f, 1.f, 0.f},
-        glm::vec3{1.f, 1.f, 1.f}, glm::vec3{0.f, 1.f, 0.f},
-        glm::vec3{1.f, 1.f, -1.f}, glm::vec3{0.f, 1.f, 0.f},
-        glm::vec3{-1.f, 1.f, -1.f}, glm::vec3{0.f, 1.f, 0.f},
-        // Bottom face
-        glm::vec3{-1.f, -1.f, 1.f}, glm::vec3{0.f, -1.f, 0.f},
-        glm::vec3{-1.f, -1.f, -1.f}, glm::vec3{0.f, -1.f, 0.f},
-        glm::vec3{1.f, -1.f, -1.f}, glm::vec3{0.f, -1.f, 0.f},
-        glm::vec3{1.f, -1.f, 1.f}, glm::vec3{0.f, -1.f, 0.f}};
-    const std::array<unsigned int, 36> cube_indices{// Right face
-                                                    0, 1, 2, 0, 2, 3,
-                                                    // Left face
-                                                    4, 5, 6, 4, 6, 7,
-                                                    // Front face
-                                                    8, 9, 11, 9, 10, 11,
-                                                    // Back face
-                                                    12, 15, 14, 12, 14, 13,
+    const std::array<glm::vec3, 8> cube_data{
+        glm::vec3{-1.f, -1.f, -1.f}, glm::vec3{1.f, -1.f, -1.f},
+        glm::vec3{-1.f, 1.f, -1.f},  glm::vec3{1.f, 1.f, -1.f},
+        glm::vec3{-1.f, -1.f, 1.f},  glm::vec3{1.f, -1.f, 1.f},
+        glm::vec3{-1.f, 1.f, 1.f},   glm::vec3{1.f, 1.f, 1.f}};
+    const std::array<unsigned int, 36> cube_indices{// Back face
+                                                    0, 2, 1, 1, 2, 3,
+                                                    // Right face
+                                                    1, 3, 7, 7, 5, 1,
                                                     // Top face
-                                                    16, 17, 19, 17, 18, 19,
+                                                    6, 7, 2, 2, 7, 3,
+                                                    // Left face
+                                                    6, 0, 4, 2, 0, 6,
                                                     // Bottom face
-                                                    20, 21, 22, 20, 22, 23};
+                                                    4, 0, 5, 5, 0, 1,
+                                                    // Front face
+                                                    6, 4, 5, 6, 5, 7};
 
     // First bind vao array
     glBindVertexArray(vao);
@@ -254,11 +228,8 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, cube_data.size() * sizeof(glm::vec3),
                  cube_data.data(), GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3),
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3),
                           reinterpret_cast<void *>(0));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3),
-                          reinterpret_cast<void *>(sizeof(glm::vec3)));
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[EBO_INDEX]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
@@ -278,8 +249,6 @@ int main() {
       base_program.use();
       const glm::mat4 M{glm::identity<glm::mat4>()};
       base_program.setMat4("model_matrix", M);
-      base_program.setMat3("normal_matrix",
-                           glm::transpose(glm::inverse(glm::mat3{M})));
       base_program.setMat4("view_matrix", camera.getViewMatrix());
       // Update perspective matrix
       int framebuffer_width, framebuffer_height;

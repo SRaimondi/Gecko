@@ -1,5 +1,9 @@
-#version 120
+#version 330 core
+
+out vec4 fragment_color;
+
+in vec3 position_view_space;
 
 void main() {
-    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    fragment_color = vec4(abs(normalize(position_view_space)), 1.f);
 }
