@@ -5,6 +5,7 @@
 #include <glm/ext/matrix_transform.hpp>
 
 #include <algorithm>
+#include <utility>
 
 namespace Gecko {
 
@@ -18,6 +19,14 @@ public:
     const glm::vec3 v{_radius * std::cos(_phi), _radius * std::cos(_theta),
                       _radius * std::sin(_phi)};
     return glm::lookAt(_at + v, _at, glm::vec3{0.f, 1.f, 0.f});
+  }
+
+  [[nodiscard]] std::pair<glm::vec3, glm::mat4>
+  getEyeAndViewMatrix() const noexcept {
+    const glm::vec3 v{_radius * std::cos(_phi), _radius * std::cos(_theta),
+                      _radius * std::sin(_phi)};
+    const glm::vec3 e{_at + v};
+    return {e, glm::lookAt(e, _at, glm::vec3{0.f, 1.f, 0.f})};
   }
 
   void rotateVertical(const float delta_phi) noexcept {

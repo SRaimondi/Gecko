@@ -223,13 +223,13 @@ int main() {
     static constexpr std::size_t VBO_INDEX{0};
     static constexpr std::size_t EBO_INDEX{1};
     std::array<GLuint, 2> buffers{0};
-    glGenBuffers(buffers.size(), buffers.data());
+    glGenBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
 
     const std::array<glm::vec3, 8> cube_data{
-        glm::vec3{-1.f, -1.f, -1.f}, glm::vec3{1.f, -1.f, -1.f},
-        glm::vec3{-1.f, 1.f, -1.f},  glm::vec3{1.f, 1.f, -1.f},
-        glm::vec3{-1.f, -1.f, 1.f},  glm::vec3{1.f, -1.f, 1.f},
-        glm::vec3{-1.f, 1.f, 1.f},   glm::vec3{1.f, 1.f, 1.f}};
+        glm::vec3{0.f, 0.f, 0.f}, glm::vec3{1.f, 0.f, 0.f},
+        glm::vec3{0.f, 1.f, 0.f}, glm::vec3{1.f, 1.f, 0.f},
+        glm::vec3{0.f, 0.f, 1.f}, glm::vec3{1.f, 0.f, 1.f},
+        glm::vec3{0.f, 1.f, 1.f}, glm::vec3{1.f, 1.f, 1.f}};
     const std::array<unsigned int, 36> cube_indices{// Back face
                                                     0, 2, 1, 1, 2, 3,
                                                     // Right face
@@ -266,8 +266,8 @@ int main() {
 
     // From the field, compute the model matrix
     const glm::mat4 M{field.computeModelMatrix()};
+    const glm::mat4 MI{glm::inverse(M)};
     base_program.setMat4("model_matrix", M);
-   // base_program.setMat4("inverse_model_matrix", glm::inverse(M));
 
     // Main render loop
     double prev_time{glfwGetTime()};
@@ -276,8 +276,11 @@ int main() {
       glClearColor(0.1f, 0.1f, 0.1f, 1.f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      const glm::mat4 V{camera.getViewMatrix()};
-      base_program.setMat4("view_matrix", V);
+      const auto eye_view_matrix{camera.getEyeAndViewMatrix()};
+      base_program.setMat4("view_matrix", eye_view_matrix.second);
+//      base_program.setVec3(
+//          "eye_model_space",
+//          glm::vec3{MI * glm::vec4{eye_view_matrix.first, 1.f}});
       // Update perspective matrix
       int framebuffer_width, framebuffer_height;
       glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
@@ -286,14 +289,12 @@ int main() {
           glm::radians(60.f), static_cast<float>(framebuffer_width),
           static_cast<float>(framebuffer_height), 0.1f, 100.f)};
       base_program.setMat4("projection_matrix", P);
-      base_program.setMat4("inverse_view_projection_matrix",
-                           glm::inverse(P * V));
 
       glBindVertexArray(vao);
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_3D, volume_texture);
-      glDrawElements(GL_TRIANGLES, cube_indices.size(), GL_UNSIGNED_INT,
-                     nullptr);
+      glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(cube_indices.size()),
+                     GL_UNSIGNED_INT, nullptr);
 
       glBindTexture(GL_TEXTURE_3D, 0);
       glBindVertexArray(0);
@@ -316,7 +317,7 @@ int main() {
 
     glDeleteTextures(1, &volume_texture);
     glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(buffers.size(), buffers.data());
+    glDeleteBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
 
     glfwDestroyWindow(window);
     glfwTerminate();

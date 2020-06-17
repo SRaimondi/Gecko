@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glm/glm.hpp"
+#include "glm/gtx/transform.hpp"
 
 #include <array>
 #include <memory>
@@ -64,9 +65,8 @@ public:
   }
 
   [[nodiscard]] glm::mat4 computeModelMatrix() const noexcept {
-    return glm::translate(
-        glm::scale(glm::identity<glm::mat4>(), 0.5f * computeDiagonal()),
-        computeCenter());
+    const glm::vec3 d{computeDiagonal()};
+    return glm::translate(computeCenter() - 0.5f * d) * glm::scale(d);
   }
 
   [[nodiscard]] glm::vec3 computeElementPosition(const int i, const int j,
