@@ -139,42 +139,51 @@ int main() {
 #endif
 
     // Create example field
-    Gecko::ScalarField<float> field{
-        glm::vec3{-1.f}, glm::vec3{1.f}, 256, 256, 256, 0.f};
+    Gecko::ScalarField<float> field{glm::vec3{-1.f, -1.f, -2.f},
+                                    glm::vec3{1.f, 1.f, 2.f},
+                                    256,
+                                    256,
+                                    256,
+                                    0.f};
 
-    {
-      constexpr static std::array<glm::vec3, 4> exp_centers{
-          glm::vec3{-0.6f, -0.5f, -1.f}, glm::vec3{0.3f, 0.5f, 0.3f},
-          glm::vec3{0.8f, 0.8f, -0.1f}, glm::vec3{-0.2f, -0.3f, 0.7f}};
-      constexpr static std::array<float, 4> exp_max{3.f, 1.f, 2.f, 5.f};
-      constexpr static std::array<float, 4> exp_c{0.2f, 0.3f, 0.1f, 0.6f};
-
-      for (int k{0}; k != field.zSize(); ++k) {
-        const float z_pos{field.min().z +
-                          static_cast<float>(k) * field.getVoxelSize().z};
-        for (int j{0}; j != field.ySize(); ++j) {
-          const float y_pos{field.min().y +
-                            static_cast<float>(j) * field.getVoxelSize().y};
-          for (int i{0}; i != field.xSize(); ++i) {
-            const float x_pos{field.min().x +
-                              static_cast<float>(i) * field.getVoxelSize().x};
-            const auto gaussian = [](const float x, const float a,
-                                     const float b, const float c) -> float {
-              const float t{x - b};
-              return a * std::exp(-t * t / (2.f * c * c));
-            };
-            float value{0.f};
-            const glm::vec3 p{x_pos, y_pos, z_pos};
-            for (std::size_t g_i{0}; g_i != exp_centers.size(); ++g_i) {
-              value =
-                  std::max(value, gaussian(glm::length(exp_centers[g_i] - p),
-                                           exp_max[g_i], 0.f, exp_c[g_i]));
-            }
-            field(i, j, k) = value;
-          }
-        }
-      }
-    }
+    //    {
+    //      constexpr static std::array<glm::vec3, 4> exp_centers{
+    //          glm::vec3{-0.6f, -0.5f, -1.f}, glm::vec3{0.3f, 0.5f, 0.3f},
+    //          glm::vec3{0.8f, 0.8f, -0.1f}, glm::vec3{-0.2f, -0.3f, 0.7f}};
+    //      constexpr static std::array<float, 4> exp_max{3.f, 1.f, 2.f, 5.f};
+    //      constexpr static std::array<float, 4> exp_c{0.2f, 0.3f, 0.1f, 0.6f};
+    //
+    //      for (int k{0}; k != field.zSize(); ++k) {
+    //        const float z_pos{field.min().z +
+    //                          static_cast<float>(k) * field.getVoxelSize().z};
+    //        for (int j{0}; j != field.ySize(); ++j) {
+    //          const float y_pos{field.min().y +
+    //                            static_cast<float>(j) *
+    //                            field.getVoxelSize().y};
+    //          for (int i{0}; i != field.xSize(); ++i) {
+    //            const float x_pos{field.min().x +
+    //                              static_cast<float>(i) *
+    //                              field.getVoxelSize().x};
+    //            const auto gaussian = [](const float x, const float a,
+    //                                     const float b, const float c) ->
+    //                                     float {
+    //              const float t{x - b};
+    //              return a * std::exp(-t * t / (2.f * c * c));
+    //            };
+    //            float value{0.f};
+    //            const glm::vec3 p{x_pos, y_pos, z_pos};
+    //            for (std::size_t g_i{0}; g_i != exp_centers.size(); ++g_i) {
+    //              value =
+    //                  std::max(value, gaussian(glm::length(exp_centers[g_i] -
+    //                  p),
+    //                                           exp_max[g_i], 0.f,
+    //                                           exp_c[g_i]));
+    //            }
+    //            field(i, j, k) = value;
+    //          }
+    //        }
+    //      }
+    //    }
 
     // Copy data to OpenGL texture
     GLuint volume_texture;
@@ -193,6 +202,8 @@ int main() {
     const Gecko::GLSLProgram base_program{
         Gecko::GLSLShader::createFromFile("../shaders/volume_render.vert"),
         Gecko::GLSLShader::createFromFile("../shaders/volume_render.frag")};
+
+    base_program.use();
 
     // Create triangle
     GLuint vao;
@@ -241,14 +252,15 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
+    // From the field, compute the model matrix
+    const glm::mat4 M{field.computeModelMatrix()};
+    base_program.setMat4("model_matrix", M);
+
     // Main render loop
     while (!glfwWindowShouldClose(window)) {
       glClearColor(0.1f, 0.1f, 0.1f, 1.f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      base_program.use();
-      const glm::mat4 M{glm::identity<glm::mat4>()};
-      base_program.setMat4("model_matrix", M);
       base_program.setMat4("view_matrix", camera.getViewMatrix());
       // Update perspective matrix
       int framebuffer_width, framebuffer_height;

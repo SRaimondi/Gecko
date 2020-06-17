@@ -59,6 +59,16 @@ public:
     return max() - min();
   }
 
+  [[nodiscard]] glm::vec3 computeCenter() const noexcept {
+    return 0.5f * (min() + max());
+  }
+
+  [[nodiscard]] glm::mat4 computeModelMatrix() const noexcept {
+    return glm::translate(
+        glm::scale(glm::identity<glm::mat4>(), 0.5f * computeDiagonal()),
+        computeCenter());
+  }
+
   [[nodiscard]] glm::vec3 computeElementPosition(const int i, const int j,
                                                  const int k) const noexcept {
     return computePosition(i, j, k);
