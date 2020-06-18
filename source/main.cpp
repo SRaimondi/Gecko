@@ -160,9 +160,10 @@ int main() {
         glm::vec3{-2.f}, glm::vec3{2.f}, 128, 128, 128, 0.f};
 
     {
-      constexpr static std::array<glm::vec3, 1> exp_centers{glm::vec3{0.f}};
-      constexpr static std::array<float, 1> exp_max{10.f};
-      constexpr static std::array<float, 4> exp_c{0.6f};
+      constexpr static std::array<glm::vec3, 3> exp_centers{
+          glm::vec3{-2.f}, glm::vec3{0.f}, glm::vec3{2.f}};
+      constexpr static std::array<float, 3> exp_max{1.f, 10.f, 5.f};
+      constexpr static std::array<float, 3> exp_c{1.f, 1.f, 1.f};
 
       for (int k{0}; k != field.zSize(); ++k) {
         const float z_pos{field.min().z +
