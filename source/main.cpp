@@ -147,8 +147,15 @@ int main() {
 #if !defined(__APPLE__)
     if (GL_ARB_debug_output) {
       glDebugMessageCallback(Gecko::Utils::GLDebugCallback, nullptr);
+#if defined(NDEBUG)
+      glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE,
+                            GL_DEBUG_SEVERITY_MEDIUM,
+                            0,
+                            nullptr, GL_TRUE);
+#else
       glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0,
                             nullptr, GL_TRUE);
+#endif
       glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0,
                            GL_DEBUG_SEVERITY_NOTIFICATION, -1,
                            "Debugging enabled");
