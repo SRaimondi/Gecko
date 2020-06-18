@@ -156,19 +156,13 @@ int main() {
 #endif
 
     // Create example field
-    Gecko::ScalarField<float> field{glm::vec3{-1.f, -1.f, -2.f},
-                                    glm::vec3{1.f, 1.f, 2.f},
-                                    256,
-                                    256,
-                                    512,
-                                    0.f};
+    Gecko::ScalarField<float> field{
+        glm::vec3{-2.f}, glm::vec3{2.f}, 128, 128, 128, 0.f};
 
     {
-      constexpr static std::array<glm::vec3, 4> exp_centers{
-          glm::vec3{-0.6f, -0.5f, -1.5f}, glm::vec3{0.3f, 0.5f, 0.3f},
-          glm::vec3{0.8f, 0.8f, -0.1f}, glm::vec3{-0.2f, -0.3f, 1.2f}};
-      constexpr static std::array<float, 4> exp_max{3.f, 1.f, 2.f, 5.f};
-      constexpr static std::array<float, 4> exp_c{1.2f, 0.3f, 0.1f, 0.6f};
+      constexpr static std::array<glm::vec3, 1> exp_centers{glm::vec3{0.f}};
+      constexpr static std::array<float, 1> exp_max{10.f};
+      constexpr static std::array<float, 4> exp_c{0.6f};
 
       for (int k{0}; k != field.zSize(); ++k) {
         const float z_pos{field.min().z +
@@ -209,6 +203,7 @@ int main() {
     glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, field.xSize(), field.ySize(),
                  field.zSize(), 0, GL_RED, GL_FLOAT,
                  reinterpret_cast<void *>(field.data()));
+    glGenerateMipmap(GL_TEXTURE_3D);
 
     // Create program
     const Gecko::GLSLProgram base_program{
@@ -260,14 +255,14 @@ int main() {
                  cube_indices.size() * sizeof(unsigned int),
                  cube_indices.data(), GL_STATIC_DRAW);
 
-    base_program.validate();
-
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     // From the field, compute the model matrix
     const glm::mat4 M{field.computeModelMatrix()};
     const glm::mat4 MI{glm::inverse(M)};
+
+    base_program.setFloat("step_size", 0.01f);
 
     // Main render loop
     double prev_time{glfwGetTime()};
@@ -290,7 +285,6 @@ int main() {
       base_program.setMat4("MVP", P * V * M);
 
       glBindVertexArray(vao);
-      glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_3D, volume_texture);
       glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(cube_indices.size()),
                      GL_UNSIGNED_INT, nullptr);
