@@ -30,9 +30,9 @@ void main() {
     vec3 current_point = eye_model_space + current_t * dir;
     vec3 step = step_size * dir;
 
-    while (current_t <= t.y) {
+    while (current_t <= t.y && any(lessThan(attenuation, vec3(10.f)))) {
         vec4 volume_value = texture(volume_texture, current_point);
-        attenuation += volume_value.x * step_size;
+        attenuation += volume_value.r * step_size;
         current_t += step_size;
         current_point += step;
     }

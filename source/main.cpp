@@ -155,6 +155,11 @@ int main() {
     }
 #endif
 
+    // Create program
+    const Gecko::GLSLProgram volume_render_program{
+        Gecko::GLSLShader::createFromFile("../shaders/volume_render.vert"),
+        Gecko::GLSLShader::createFromFile("../shaders/volume_render.frag")};
+
     // Create example field
     Gecko::ScalarField<float> field{
         glm::vec3{-2.f}, glm::vec3{2.f}, 128, 128, 128, 0.f};
@@ -162,7 +167,7 @@ int main() {
     {
       constexpr static std::array<glm::vec3, 3> exp_centers{
           glm::vec3{-2.f}, glm::vec3{0.f}, glm::vec3{2.f}};
-      constexpr static std::array<float, 3> exp_max{1.f, 10.f, 5.f};
+      constexpr static std::array<float, 3> exp_max{2.f, 3.f, 5.f};
       constexpr static std::array<float, 3> exp_c{1.f, 1.f, 1.f};
 
       for (int k{0}; k != field.zSize(); ++k) {
@@ -195,6 +200,7 @@ int main() {
     // Copy data to OpenGL texture
     GLuint volume_texture;
     glGenTextures(1, &volume_texture);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_3D, volume_texture);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -204,14 +210,10 @@ int main() {
     glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, field.xSize(), field.ySize(),
                  field.zSize(), 0, GL_RED, GL_FLOAT,
                  reinterpret_cast<void *>(field.data()));
-    glGenerateMipmap(GL_TEXTURE_3D);
+    glBindTexture(GL_TEXTURE_3D, 0);
 
-    // Create program
-    const Gecko::GLSLProgram base_program{
-        Gecko::GLSLShader::createFromFile("../shaders/volume_render.vert"),
-        Gecko::GLSLShader::createFromFile("../shaders/volume_render.frag")};
-
-    base_program.use();
+    volume_render_program.use();
+    volume_render_program.setInt("volume_texture", 0);
 
     // Create triangle
     GLuint vao;
@@ -263,7 +265,7 @@ int main() {
     const glm::mat4 M{field.computeModelMatrix()};
     const glm::mat4 MI{glm::inverse(M)};
 
-    base_program.setFloat("step_size", 0.01f);
+    volume_render_program.setFloat("step_size", 0.01f);
 
     // Main render loop
     double prev_time{glfwGetTime()};
@@ -274,7 +276,7 @@ int main() {
 
       // Get view matrix
       const auto [eye, V]{camera.getEyeAndViewMatrix()};
-      base_program.setVec3("eye_model_space",
+      volume_render_program.setVec3("eye_model_space",
                            glm::vec3{MI * glm::vec4{eye, 1.f}});
       // Update perspective matrix
       int framebuffer_width, framebuffer_height;
@@ -283,10 +285,12 @@ int main() {
       const glm::mat4 P{glm::perspectiveFov(
           glm::radians(60.f), static_cast<float>(framebuffer_width),
           static_cast<float>(framebuffer_height), 0.1f, 100.f)};
-      base_program.setMat4("MVP", P * V * M);
+      volume_render_program.setMat4("MVP", P * V * M);
+
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_3D, volume_texture);
 
       glBindVertexArray(vao);
-      glBindTexture(GL_TEXTURE_3D, volume_texture);
       glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(cube_indices.size()),
                      GL_UNSIGNED_INT, nullptr);
 
