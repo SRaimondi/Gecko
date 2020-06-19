@@ -19,6 +19,7 @@ class GLSLShader {
 public:
   ~GLSLShader() noexcept { glDeleteShader(_shader_id); }
 
+  // Not copyable or assignable
   GLSLShader(const GLSLShader &) = delete;
   GLSLShader &operator=(const GLSLShader &) = delete;
 

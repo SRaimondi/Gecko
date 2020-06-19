@@ -166,14 +166,14 @@ int main() {
         Gecko::GLSLShader::createFromFile("../shaders/volume_render.frag")};
 
     // Create example field
-    Gecko::ScalarField<float> field{
-        glm::vec3{-3.f}, glm::vec3{3.f}, 128, 128, 128, 0.f};
+    using ScalarField = Gecko::ScalarField<float>;
+    ScalarField field{glm::vec3{-3.f}, glm::vec3{3.f}, 128, 128, 128, 0.f};
 
     {
       constexpr static std::array<glm::vec3, 3> exp_centers{
           glm::vec3{-2.f}, glm::vec3{0.f}, glm::vec3{2.f}};
-      constexpr static std::array<float, 3> exp_max{2.f, 3.f, 5.f};
-      constexpr static std::array<float, 3> exp_c{1.f, 1.f, 1.f};
+      constexpr static std::array<float, 3> exp_max{10.f, 3.f, 5.f};
+      constexpr static std::array<float, 3> exp_c{0.5f, 1.f, 0.8f};
 
       for (int k{0}; k != field.zSize(); ++k) {
         const float z_pos{field.min().z +
@@ -228,40 +228,22 @@ int main() {
     std::array<GLuint, 2> buffers{0};
     glGenBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
 
-    constexpr static std::array<glm::vec3, 8> cube_data{
-        glm::vec3{0.f, 0.f, 0.f}, glm::vec3{1.f, 0.f, 0.f},
-        glm::vec3{0.f, 1.f, 0.f}, glm::vec3{1.f, 1.f, 0.f},
-        glm::vec3{0.f, 0.f, 1.f}, glm::vec3{1.f, 0.f, 1.f},
-        glm::vec3{0.f, 1.f, 1.f}, glm::vec3{1.f, 1.f, 1.f}};
-    constexpr static std::array<unsigned int, 36> cube_indices{// Back face
-                                                               0, 2, 1, 1, 2, 3,
-                                                               // Right face
-                                                               1, 3, 7, 7, 5, 1,
-                                                               // Top face
-                                                               6, 7, 2, 2, 7, 3,
-                                                               // Left face
-                                                               6, 0, 4, 2, 0, 6,
-                                                               // Bottom face
-                                                               4, 0, 5, 5, 0, 1,
-                                                               // Front face
-                                                               6, 4, 5, 6, 5,
-                                                               7};
-
     // First bind vao array
     glBindVertexArray(vao);
 
     // Now bind vbo and submit data
     glBindBuffer(GL_ARRAY_BUFFER, buffers[VBO_INDEX]);
-    glBufferData(GL_ARRAY_BUFFER, cube_data.size() * sizeof(glm::vec3),
-                 cube_data.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,
+                 ScalarField::cube_data.size() * sizeof(glm::vec3),
+                 ScalarField::cube_data.data(), GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3),
                           reinterpret_cast<void *>(0));
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[EBO_INDEX]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 cube_indices.size() * sizeof(unsigned int),
-                 cube_indices.data(), GL_STATIC_DRAW);
+                 ScalarField::cube_indices.size() * sizeof(unsigned int),
+                 ScalarField::cube_indices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -296,7 +278,8 @@ int main() {
       glBindTexture(GL_TEXTURE_3D, volume_texture);
 
       glBindVertexArray(vao);
-      glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(cube_indices.size()),
+      glDrawElements(GL_TRIANGLES,
+                     static_cast<GLsizei>(ScalarField::cube_indices.size()),
                      GL_UNSIGNED_INT, nullptr);
 
       glBindTexture(GL_TEXTURE_3D, 0);

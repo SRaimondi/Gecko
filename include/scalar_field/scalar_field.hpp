@@ -83,6 +83,26 @@ public:
   [[nodiscard]] T *data() noexcept { return _elements.get(); }
   [[nodiscard]] const T *data() const noexcept { return _elements.get(); }
 
+  // Cube data for OpenGL buffers to draw which reflects the model matrix
+  // returned
+  constexpr static std::array<glm::vec3, 8> cube_data{
+      glm::vec3{0.f, 0.f, 0.f}, glm::vec3{1.f, 0.f, 0.f},
+      glm::vec3{0.f, 1.f, 0.f}, glm::vec3{1.f, 1.f, 0.f},
+      glm::vec3{0.f, 0.f, 1.f}, glm::vec3{1.f, 0.f, 1.f},
+      glm::vec3{0.f, 1.f, 1.f}, glm::vec3{1.f, 1.f, 1.f}};
+  constexpr static std::array<unsigned int, 36> cube_indices{// Back face
+                                                             0, 2, 1, 1, 2, 3,
+                                                             // Right face
+                                                             1, 3, 7, 7, 5, 1,
+                                                             // Top face
+                                                             6, 7, 2, 2, 7, 3,
+                                                             // Left face
+                                                             6, 0, 4, 2, 0, 6,
+                                                             // Bottom face
+                                                             4, 0, 5, 5, 0, 1,
+                                                             // Front face
+                                                             6, 4, 5, 6, 5, 7};
+
 private:
   void checkIndex(const int i, const int j, const int k) const {
     if (i >= xSize() || i < 0 || j >= ySize() || j < 0 || k >= zSize() ||
