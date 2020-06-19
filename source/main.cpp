@@ -166,7 +166,8 @@ int main() {
 
     // Create example field
     using ScalarField = Gecko::ScalarField<float>;
-    ScalarField field{glm::vec3{-3.f}, glm::vec3{3.f}, 256, 256, 256, 0.f};
+    ScalarField field{ScalarField::createFromMinMax(
+        glm::vec3{-3.f}, glm::vec3{3.f}, 256, 256, 256, 0.f)};
 
     {
       constexpr static std::array<glm::vec3, 3> exp_centers{

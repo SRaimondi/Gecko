@@ -11,8 +11,14 @@ namespace Gecko {
 
 template <typename T> class ScalarField {
 public:
-  ScalarField(const glm::vec3 &bounds_min, const glm::vec3 &bounds_max,
-              int x_size, int y_size, int z_size, const T &default_value);
+  [[nodiscard]] static ScalarField
+  createFromMinMax(const glm::vec3 &bounds_min, const glm::vec3 &bounds_max,
+                   int x_size, int y_size, int z_size, const T &default_value);
+
+  [[nodiscard]] static ScalarField
+  createFromMinVoxelSize(const glm::vec3 &bounds_min,
+                         const glm::vec3 &voxel_size, int x_size, int y_size,
+                         int z_size, const T &default_value);
 
   ScalarField(const ScalarField &other);
   ScalarField(ScalarField &&) noexcept = default;
@@ -104,10 +110,25 @@ public:
                                                              6, 4, 5, 6, 5, 7};
 
 private:
+  ScalarField(const glm::vec3 &bounds_min, const glm::vec3 &bounds_max,
+              int x_size, int y_size, int z_size, const T &default_value);
+
   void checkIndex(const int i, const int j, const int k) const {
     if (i >= xSize() || i < 0 || j >= ySize() || j < 0 || k >= zSize() ||
         k < 0) {
       throw std::out_of_range{"Invalid element index in ScalarField"};
+    }
+  }
+
+  static void checkSize(const int x_size, const int y_size, const int z_size) {
+    if (x_size < 2 || y_size < 2 || z_size < 2) {
+      throw std::runtime_error{"Invalid Scalar field size"};
+    }
+  }
+
+  static void checkBounds(const glm::vec3 &min, const glm::vec3 &max) {
+    if (glm::any(glm::lessThanEqual(max, min))) {
+      throw std::runtime_error{"Invalid field bounds"};
     }
   }
 
@@ -130,9 +151,37 @@ private:
 };
 
 template <typename T>
+ScalarField<T> ScalarField<T>::createFromMinMax(
+    const glm::vec3 &bounds_min, const glm::vec3 &bounds_max, const int x_size,
+    const int y_size, const int z_size, const T &default_value) {
+  checkSize(x_size, y_size, z_size);
+  checkBounds(bounds_min, bounds_max);
+  return {bounds_min, bounds_max, x_size, y_size, z_size, default_value};
+}
+
+template <typename T>
+ScalarField<T> ScalarField<T>::createFromMinVoxelSize(
+    const glm::vec3 &bounds_min, const glm::vec3 &voxel_size, const int x_size,
+    const int y_size, const int z_size, const T &default_value) {
+  checkSize(x_size, y_size, z_size);
+  if (glm::any(glm::lessThanEqual(voxel_size, glm::zero<glm::vec3>()))) {
+    throw std::runtime_error{"Invalid voxel size"};
+  }
+  return {bounds_min,
+          bounds_min + glm::vec3{static_cast<float>(x_size - 1) * voxel_size.x,
+                                 static_cast<float>(y_size - 1) * voxel_size.y,
+                                 static_cast<float>(z_size - 1) * voxel_size.z},
+          x_size,
+          y_size,
+          z_size,
+          default_value};
+}
+
+template <typename T>
 ScalarField<T>::ScalarField(const glm::vec3 &bounds_min,
-                            const glm::vec3 &bounds_max, int x_size, int y_size,
-                            int z_size, const T &default_value)
+                            const glm::vec3 &bounds_max, const int x_size,
+                            const int y_size, const int z_size,
+                            const T &default_value)
     : _bounds_min{bounds_min}, _bounds_max{bounds_max}, _num_elements{x_size,
                                                                       y_size,
                                                                       z_size},
@@ -141,12 +190,6 @@ ScalarField<T>::ScalarField(const glm::vec3 &bounds_min,
                             static_cast<float>(_num_elements.y - 1),
                             static_cast<float>(_num_elements.z - 1)}},
       _elements{new T[totalElements()]} {
-  if (_num_elements.x <= 2 || _num_elements.y <= 2 || _num_elements.z <= 2) {
-    throw std::runtime_error{"Invalid Scalar field size"};
-  }
-  if (glm::any(glm::lessThan(_bounds_max, _bounds_min))) {
-    throw std::runtime_error{"Scalar field bounds are invalid"};
-  }
   for (std::size_t i{0}; i != totalElements(); ++i) {
     _elements[i] = default_value;
   }
