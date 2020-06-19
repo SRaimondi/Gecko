@@ -149,9 +149,7 @@ int main() {
       glDebugMessageCallback(Gecko::Utils::GLDebugCallback, nullptr);
 #if defined(NDEBUG)
       glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE,
-                            GL_DEBUG_SEVERITY_MEDIUM,
-                            0,
-                            nullptr, GL_TRUE);
+                            GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
 #else
       glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0,
                             nullptr, GL_TRUE);
@@ -169,7 +167,7 @@ int main() {
 
     // Create example field
     Gecko::ScalarField<float> field{
-        glm::vec3{-2.f}, glm::vec3{2.f}, 128, 128, 128, 0.f};
+        glm::vec3{-3.f}, glm::vec3{3.f}, 128, 128, 128, 0.f};
 
     {
       constexpr static std::array<glm::vec3, 3> exp_centers{
@@ -284,7 +282,7 @@ int main() {
       // Get view matrix
       const auto [eye, V]{camera.getEyeAndViewMatrix()};
       volume_render_program.setVec3("eye_model_space",
-                           glm::vec3{MI * glm::vec4{eye, 1.f}});
+                                    glm::vec3{MI * glm::vec4{eye, 1.f}});
       // Update perspective matrix
       int framebuffer_width, framebuffer_height;
       glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
