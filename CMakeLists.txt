@@ -46,7 +46,11 @@ set(IMGUI_SOURCE
 
 set(EXECUTABLE_NAME Gecko)
 
-add_executable(${EXECUTABLE_NAME} ${HEADER_FILES} ${GLAD_SOURCE} ${IMGUI_SOURCE} ${SOURCE_FILES})
+add_executable(${EXECUTABLE_NAME}
+        ${HEADER_FILES}
+        ${GLAD_SOURCE}
+        ${IMGUI_SOURCE}
+        ${SOURCE_FILES})
 
 target_include_directories(${EXECUTABLE_NAME} PRIVATE include)
 target_include_directories(${EXECUTABLE_NAME}
