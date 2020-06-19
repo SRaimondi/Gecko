@@ -55,6 +55,24 @@ static void glfwKeyCallback(GLFWwindow *window, const int key,
   }
 }
 
+static void createPerformanceOverlay() {
+  constexpr static float DISTANCE{10.0f};
+  const ImVec2 window_pos{DISTANCE, DISTANCE};
+  const ImVec2 window_pos_pivot{0.0f, 0.0f};
+  ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+  ImGui::SetNextWindowBgAlpha(0.35f);
+  constexpr static ImGuiWindowFlags flags{
+      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+      ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove};
+
+  ImGui::Begin("Stats window", nullptr, flags);
+  ImGui::Text("Performance: %.3f ms/frame (%.1f FPS)",
+              static_cast<double>(1000.0f / ImGui::GetIO().Framerate),
+              static_cast<double>(ImGui::GetIO().Framerate));
+  ImGui::End();
+}
+
 static void glfwMouseButtonCallback(GLFWwindow *window, const int button,
                                     const int action,
                                     [[maybe_unused]] const int mods) {
@@ -327,17 +345,7 @@ int main() {
       glBindTexture(GL_TEXTURE_3D, 0);
       glBindVertexArray(0);
 
-      {
-        ImGui::Begin("Control window");
-        ImGui::ColorEdit3("Clear color", glm::value_ptr(clear_color));
-        if (ImGui::Button("Reset clear color")) {
-          clear_color.x = clear_color.y = clear_color.z = 0.1f;
-        }
-        ImGui::Text("Gecko average %.3f ms/frame (%.1f FPS)",
-                    1000.0f / ImGui::GetIO().Framerate,
-                    ImGui::GetIO().Framerate);
-        ImGui::End();
-      }
+      createPerformanceOverlay();
 
       // Render
       ImGui::Render();
