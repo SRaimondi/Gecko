@@ -161,6 +161,7 @@ int main() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io{ImGui::GetIO()};
+    static_cast<void>(io);
 
     // Setup dark style
     ImGui::StyleColorsDark();
