@@ -3,6 +3,10 @@
 #endif
 
 // clang-format off
+#define IMGUI_IMPL_OPENGL_LOADER_GLAD 1
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 // clang-format on
@@ -16,16 +20,15 @@
 
 #include <array>
 
-static void glfwErrorCallback([[maybe_unused]] const int error,
-                              const char *description) {
-  spdlog::error("GLFW error: {}", description);
+static void glfwErrorCallback(const int error, const char *description) {
+  spdlog::error("GLFW error {}: {}", error, description);
 }
 
 static Gecko::OrbitCamera camera{glm::vec3{0.f, 0.f, 10.f},
                                  glm::zero<glm::vec3>()};
 static glm::vec2 previous_mouse_position;
-static int mouse_is_down{0};
-static int shift_is_down{0};
+
+static uint8_t down_flags{0u};
 
 static void glfwKeyCallback(GLFWwindow *window, const int key,
                             [[maybe_unused]] const int scancode,
@@ -35,9 +38,16 @@ static void glfwKeyCallback(GLFWwindow *window, const int key,
   }
   if (key == GLFW_KEY_LEFT_SHIFT) {
     if (action == GLFW_PRESS) {
-      shift_is_down = 1;
+      down_flags |= 0x4u;
     } else if (action == GLFW_RELEASE) {
-      shift_is_down = 0;
+      down_flags &= ~0x4u;
+    }
+  }
+  if (key == GLFW_KEY_LEFT_CONTROL) {
+    if (action == GLFW_PRESS) {
+      down_flags |= 0x2u;
+    } else if (action == GLFW_RELEASE) {
+      down_flags &= ~0x2u;
     }
   }
   if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
@@ -50,13 +60,13 @@ static void glfwMouseButtonCallback(GLFWwindow *window, const int button,
                                     [[maybe_unused]] const int mods) {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
     if (action == GLFW_PRESS) {
-      mouse_is_down = 1;
+      down_flags |= 0x1u;
       double x, y;
       glfwGetCursorPos(window, &x, &y);
       previous_mouse_position.x = static_cast<float>(x);
       previous_mouse_position.y = static_cast<float>(y);
     } else if (action == GLFW_RELEASE) {
-      mouse_is_down = 0;
+      down_flags &= ~0x1u;
     }
   }
 }
@@ -64,17 +74,24 @@ static void glfwMouseButtonCallback(GLFWwindow *window, const int button,
 static void glfwMouseCallback([[maybe_unused]] GLFWwindow *window,
                               const double xpos, const double ypos) {
   constexpr static float CAMERA_SENSITIVITY{0.01f};
-  if (mouse_is_down) {
-    const float x_offset{static_cast<float>(xpos) - previous_mouse_position.x};
-    const float y_offset{static_cast<float>(ypos) - previous_mouse_position.y};
-    previous_mouse_position.x = static_cast<float>(xpos);
-    previous_mouse_position.y = static_cast<float>(ypos);
-    if (shift_is_down) {
-      camera.moveRight(-CAMERA_SENSITIVITY * x_offset);
-      camera.moveUp(CAMERA_SENSITIVITY * y_offset);
-    } else {
-      camera.rotateVertical(CAMERA_SENSITIVITY * x_offset);
-      camera.rotateHorizontal(-CAMERA_SENSITIVITY * y_offset);
+  const bool ctrl_down{static_cast<bool>(down_flags & 0x2u)};
+  const bool shift_down{static_cast<bool>(down_flags & 0x4u)};
+
+  if (ctrl_down || shift_down) {
+    if (static_cast<bool>(down_flags & 0x1u)) {
+      const float x_offset{static_cast<float>(xpos) -
+                           previous_mouse_position.x};
+      const float y_offset{static_cast<float>(ypos) -
+                           previous_mouse_position.y};
+      previous_mouse_position.x = static_cast<float>(xpos);
+      previous_mouse_position.y = static_cast<float>(ypos);
+      if (ctrl_down) {
+        camera.rotateVertical(CAMERA_SENSITIVITY * x_offset);
+        camera.rotateHorizontal(-CAMERA_SENSITIVITY * y_offset);
+      } else {
+        camera.moveRight(-CAMERA_SENSITIVITY * x_offset);
+        camera.moveUp(CAMERA_SENSITIVITY * y_offset);
+      }
     }
   }
 }
@@ -95,9 +112,9 @@ int main() {
     }
 
 #if defined(__APPLE__)
+    // GL 4.1
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -107,10 +124,11 @@ int main() {
 #endif
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     // Create GLFW window
     constexpr static int INITIAL_WIDTH{800};
-    constexpr static int INITIAL_HEIGHT{800};
+    constexpr static int INITIAL_HEIGHT{600};
     GLFWwindow *window{glfwCreateWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "Gecko",
                                         nullptr, nullptr)};
     if (window == nullptr) {
@@ -119,6 +137,9 @@ int main() {
       return 1;
     }
     glfwMakeContextCurrent(window);
+    // Enable vsync
+    glfwSwapInterval(1);
+
     constexpr static int MINIMUM_WIDTH{200};
     constexpr static int MINIMUM_HEIGHT{200};
     glfwSetWindowSizeLimits(window, MINIMUM_WIDTH, MINIMUM_HEIGHT,
@@ -135,6 +156,18 @@ int main() {
       glfwTerminate();
       return 1;
     }
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io{ImGui::GetIO()};
+
+    // Setup dark style
+    ImGui::StyleColorsDark();
+
+    // Setup Platform / Renderer bindings
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330 core");
 
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
@@ -248,18 +281,26 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
+    // Window clear color
+    glm::vec4 clear_color{0.1f, 0.1f, 0.1f, 1.f};
+
     // From the field, compute the model matrix
     const glm::mat4 M{field.computeModelMatrix()};
     const glm::mat4 MI{glm::inverse(M)};
-
     volume_render_program.setFloat("step_size", 0.01f);
 
     // Main render loop
-    double prev_time{glfwGetTime()};
-    int num_frames{0};
     while (!glfwWindowShouldClose(window)) {
-      glClearColor(0.1f, 0.1f, 0.1f, 1.f);
+      glfwPollEvents();
+
+      // Clear buffers
+      glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+      // Start the Dear ImGui frame
+      ImGui_ImplOpenGL3_NewFrame();
+      ImGui_ImplGlfw_NewFrame();
+      ImGui::NewFrame();
 
       // Get view matrix
       const auto [eye, V]{camera.getEyeAndViewMatrix()};
@@ -285,25 +326,33 @@ int main() {
       glBindTexture(GL_TEXTURE_3D, 0);
       glBindVertexArray(0);
 
-      glfwSwapBuffers(window);
-      glfwPollEvents();
-
-      const double current_time{glfwGetTime()};
-      const double delta_time{current_time - prev_time};
-      ++num_frames;
-      if (delta_time > 0.5) {
-        const std::string title{
-            fmt::format("Gecko (FPS: {:.2f})",
-                        static_cast<double>(num_frames) / delta_time)};
-        glfwSetWindowTitle(window, title.c_str());
-        prev_time = current_time;
-        num_frames = 0;
+      {
+        ImGui::Begin("Control window");
+        ImGui::ColorEdit3("Clear color", glm::value_ptr(clear_color));
+        if (ImGui::Button("Reset clear color")) {
+          clear_color.x = clear_color.y = clear_color.z = 0.1f;
+        }
+        ImGui::Text("Gecko average %.3f ms/frame (%.1f FPS)",
+                    1000.0f / ImGui::GetIO().Framerate,
+                    ImGui::GetIO().Framerate);
+        ImGui::End();
       }
+
+      // Render
+      ImGui::Render();
+      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+      glfwSwapBuffers(window);
     }
 
     glDeleteTextures(1, &volume_texture);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
+
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwDestroyWindow(window);
     glfwTerminate();

@@ -37,15 +37,24 @@ set(SOURCE_FILES
 
 set(GLAD_SOURCE source/glad/glad.c)
 
+set(IMGUI_SOURCE
+        external/imgui/imgui.cpp
+        external/imgui/imgui_draw.cpp
+        external/imgui/imgui_widgets.cpp
+        external/imgui/examples/imgui_impl_glfw.cpp
+        external/imgui/examples/imgui_impl_opengl3.cpp)
+
 set(EXECUTABLE_NAME Gecko)
 
-add_executable(${EXECUTABLE_NAME} ${HEADER_FILES} ${GLAD_SOURCE} ${SOURCE_FILES})
+add_executable(${EXECUTABLE_NAME} ${HEADER_FILES} ${GLAD_SOURCE} ${IMGUI_SOURCE} ${SOURCE_FILES})
 
 target_include_directories(${EXECUTABLE_NAME} PRIVATE include)
 target_include_directories(${EXECUTABLE_NAME}
         SYSTEM PRIVATE external/spdlog/include
         SYSTEM PRIVATE external/glm
-        SYSTEM PRIVATE external/fmt/include)
+        SYSTEM PRIVATE external/fmt/include
+        SYSTEM PRIVATE external/imgui
+        SYSTEM PRIVATE external/imgui/examples)
 
 # Set warnings
 set(MSVC_WARNINGS
