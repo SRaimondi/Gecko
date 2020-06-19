@@ -119,7 +119,6 @@ int main() {
       return 1;
     }
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(0);
     constexpr static int MINIMUM_WIDTH{200};
     constexpr static int MINIMUM_HEIGHT{200};
     glfwSetWindowSizeLimits(window, MINIMUM_WIDTH, MINIMUM_HEIGHT,
@@ -167,7 +166,7 @@ int main() {
 
     // Create example field
     using ScalarField = Gecko::ScalarField<float>;
-    ScalarField field{glm::vec3{-3.f}, glm::vec3{3.f}, 128, 128, 128, 0.f};
+    ScalarField field{glm::vec3{-3.f}, glm::vec3{3.f}, 256, 256, 256, 0.f};
 
     {
       constexpr static std::array<glm::vec3, 3> exp_centers{
