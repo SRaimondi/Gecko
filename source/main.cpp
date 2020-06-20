@@ -3,7 +3,6 @@
 #endif
 
 // clang-format off
-#define IMGUI_IMPL_OPENGL_LOADER_GLAD 1
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
