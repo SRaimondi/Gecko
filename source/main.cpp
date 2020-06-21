@@ -280,13 +280,22 @@ int main() {
 
     volume_render_program.use();
     volume_render_program.setInt("volume_texture", 0);
+    volume_render_program.setVec2("volume_min_max",
+                                  glm::vec2{field_min, field_max});
 
     // Create tf texture
-    std::array<float, 512> tf_data{};
+    std::array<glm::vec4, 512> tf_data{};
     const float step{(field_max - field_min) /
                      static_cast<float>(tf_data.size() - 1)};
     float current_pos{field_min};
     for (std::size_t i{0}; i != tf_data.size(); ++i) {
+      if (std::abs(current_pos - 2.f) < 0.01f) {
+        tf_data[i] = glm::vec4{30.f, 0.f, 0.f, 1.f};
+      } else {
+        tf_data[i] = glm::zero<glm::vec4>();
+      }
+
+      current_pos += step;
     }
 
     GLuint tf_texture;
@@ -296,9 +305,11 @@ int main() {
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F,
-                 static_cast<GLsizei>(tf_data.size()), 0, GL_RED, GL_FLOAT,
-                 tf_data.data());
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA32F,
+                 static_cast<GLsizei>(tf_data.size()), 0, GL_RGBA, GL_FLOAT,
+                 glm::value_ptr(tf_data.front()));
+
+    volume_render_program.setInt("transfer_function_texture", 1);
 
     // Create geometry data
     GLuint vao;
@@ -359,12 +370,15 @@ int main() {
 
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_3D, volume_texture);
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_1D, tf_texture);
 
       glBindVertexArray(vao);
       glDrawElements(GL_TRIANGLES,
                      static_cast<GLsizei>(ScalarField::cube_indices.size()),
                      GL_UNSIGNED_INT, nullptr);
 
+      glBindTexture(GL_TEXTURE_1D, 0);
       glBindTexture(GL_TEXTURE_3D, 0);
       glBindVertexArray(0);
 

@@ -6,6 +6,7 @@ in vec3 p_model_space;
 
 uniform vec3 eye_model_space;
 uniform float step_size;
+uniform vec2 volume_min_max;
 
 uniform sampler3D volume_texture;
 uniform sampler1D transfer_function_texture;
@@ -32,17 +33,30 @@ void main() {
     vec3 dir = normalize(p_model_space - eye_model_space);
     vec2 t = computeBoundsHit(eye_model_space, vec3(1.f) / dir, vec3(0.f), vec3(1.f));
 
-    vec3 attenuation = vec3(0.f);
+    float alpha = 0.f;
+    vec3 c = vec3(0.f);
+
     float current_t = t.x;
     vec3 current_point = eye_model_space + current_t * dir;
     vec3 step = step_size * dir;
 
-    while (current_t <= t.y && any(lessThan(attenuation, vec3(10.f)))) {
+    while (current_t <= t.y && alpha < 0.99f) {
         vec4 volume_value = texture(volume_texture, current_point);
-        attenuation += volume_value.r * step_size;
+        // Map volume value to tf interval
+        vec4 tf_value = texture(transfer_function_texture, (volume_value.r - volume_min_max.x) /
+        (volume_min_max.y - volume_min_max.x));
+
+        // Correct based on step size
+        float alpha_p = 1.f - pow(1.f - tf_value.a, step_size);
+        vec3 color_p = tf_value.rgb * step_size;
+
+        // Accumulate
+        c = c + (1.f - alpha) * color_p;
+        alpha = alpha + (1.f - alpha) * alpha_p;
+
         current_t += step_size;
         current_point += step;
     }
 
-    fragment_color = vec4(exp(-attenuation), 1.f);
+    fragment_color = vec4(c, 1.f);
 }
