@@ -120,6 +120,12 @@ static void glfwScrollCallback([[maybe_unused]] GLFWwindow *window,
   camera.changeRadius(SCROLL_SENSITIVITY * static_cast<float>(-yoffset));
 }
 
+template <typename T>
+[[nodiscard]] T gaussian(const T &x, const T &a, const T &b, const T &c) {
+  const float t{x - b};
+  return a * std::exp(-t * t / (2.f * c * c));
+}
+
 int main() {
   try {
     glfwSetErrorCallback(glfwErrorCallback);
@@ -217,6 +223,8 @@ int main() {
 
     // Create example field
     using ScalarField = Gecko::ScalarField<float>;
+    float field_max{std::numeric_limits<float>::lowest()};
+    float field_min{std::numeric_limits<float>::max()};
     ScalarField field{ScalarField::createFromMinMax(
         glm::vec3{-3.f}, glm::vec3{3.f}, 256, 256, 256, 0.f)};
 
@@ -235,11 +243,6 @@ int main() {
           for (int i{0}; i != field.xSize(); ++i) {
             const float x_pos{field.min().x +
                               static_cast<float>(i) * field.getVoxelSize().x};
-            const auto gaussian = [](const float x, const float a,
-                                     const float b, const float c) -> float {
-              const float t{x - b};
-              return a * std::exp(-t * t / (2.f * c * c));
-            };
             float value{0.f};
             const glm::vec3 p{x_pos, y_pos, z_pos};
             for (std::size_t g_i{0}; g_i != exp_centers.size(); ++g_i) {
@@ -247,11 +250,18 @@ int main() {
                   std::max(value, gaussian(glm::length(exp_centers[g_i] - p),
                                            exp_max[g_i], 0.f, exp_c[g_i]));
             }
+            if (value > field_max) {
+              field_max = value;
+            }
+            if (value < field_min) {
+              field_min = value;
+            }
             field(i, j, k) = value;
           }
         }
       }
     }
+    spdlog::info("Field max: {}, min: {}", field_max, field_min);
 
     // Copy data to OpenGL texture
     GLuint volume_texture;
@@ -271,7 +281,26 @@ int main() {
     volume_render_program.use();
     volume_render_program.setInt("volume_texture", 0);
 
-    // Create triangle
+    // Create tf texture
+    std::array<float, 512> tf_data{};
+    const float step{(field_max - field_min) /
+                     static_cast<float>(tf_data.size() - 1)};
+    float current_pos{field_min};
+    for (std::size_t i{0}; i != tf_data.size(); ++i) {
+    }
+
+    GLuint tf_texture;
+    glGenTextures(1, &tf_texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_1D, tf_texture);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F,
+                 static_cast<GLsizei>(tf_data.size()), 0, GL_RED, GL_FLOAT,
+                 tf_data.data());
+
+    // Create geometry data
     GLuint vao;
     glGenVertexArrays(1, &vao);
     static constexpr std::size_t VBO_INDEX{0};
@@ -315,11 +344,6 @@ int main() {
       glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      // Start the Dear ImGui frame
-      ImGui_ImplOpenGL3_NewFrame();
-      ImGui_ImplGlfw_NewFrame();
-      ImGui::NewFrame();
-
       // Get view matrix
       const auto [eye, V]{camera.getEyeAndViewMatrix()};
       volume_render_program.setVec3("eye_model_space",
@@ -343,6 +367,11 @@ int main() {
 
       glBindTexture(GL_TEXTURE_3D, 0);
       glBindVertexArray(0);
+
+      // Start the Dear ImGui frame
+      ImGui_ImplOpenGL3_NewFrame();
+      ImGui_ImplGlfw_NewFrame();
+      ImGui::NewFrame();
 
       createPerformanceOverlay();
 

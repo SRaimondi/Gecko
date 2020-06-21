@@ -8,6 +8,7 @@ uniform vec3 eye_model_space;
 uniform float step_size;
 
 uniform sampler3D volume_texture;
+uniform sampler1D transfer_function_texture;
 
 float minElement(in vec3 v) {
     return min(v.x, min(v.y, v.z));

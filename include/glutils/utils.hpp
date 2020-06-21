@@ -9,4 +9,4 @@ void APIENTRY GLDebugCallback(GLenum source, GLenum type, GLuint id,
                               const GLchar *message,
                               const void *param) noexcept;
 
-}
+} // namespace Gecko::Utils
