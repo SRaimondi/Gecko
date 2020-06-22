@@ -261,7 +261,7 @@ int main() {
         }
       }
     }
-    spdlog::info("Field max: {}, min: {}", field_max, field_min);
+    spdlog::info("Field max: {}, min: {}", field_min, field_max);
 
     // Copy data to OpenGL texture
     GLuint volume_texture;
@@ -289,12 +289,8 @@ int main() {
                      static_cast<float>(tf_data.size() - 1)};
     float current_pos{field_min};
     for (std::size_t i{0}; i != tf_data.size(); ++i) {
-      if (std::abs(current_pos - 2.f) < 0.01f) {
-        tf_data[i] = glm::vec4{30.f, 0.f, 0.f, 1.f};
-      } else {
-        tf_data[i] = glm::zero<glm::vec4>();
-      }
-
+      const float gaussian_val{gaussian(current_pos, 1.f, 2.f, 0.05f)};
+      tf_data[i] = glm::vec4{30.f * gaussian_val, 0.f, 0.f, gaussian_val};
       current_pos += step;
     }
 
@@ -345,7 +341,10 @@ int main() {
     // From the field, compute the model matrix
     const glm::mat4 M{field.computeModelMatrix()};
     const glm::mat4 MI{glm::inverse(M)};
-    volume_render_program.setFloat("step_size", 0.01f);
+    volume_render_program.setFloat("step_size", (field.getVoxelSize().x +
+                                                 field.getVoxelSize().y +
+                                                 field.getVoxelSize().z) /
+                                                    static_cast<float>(9.f));
 
     // Main render loop
     while (!glfwWindowShouldClose(window)) {

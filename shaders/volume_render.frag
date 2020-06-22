@@ -6,9 +6,10 @@ in vec3 p_model_space;
 
 uniform vec3 eye_model_space;
 uniform float step_size;
-uniform vec2 volume_min_max;
 
+uniform vec2 volume_min_max;
 uniform sampler3D volume_texture;
+
 uniform sampler1D transfer_function_texture;
 
 float minElement(in vec3 v) {
@@ -27,6 +28,10 @@ in vec3 bounds_min, in vec3 bounds_max) {
     vec3 slabs_max_intersection = max(bounds_min_intersection, bounds_max_intersection);
 
     return vec2(maxElement(slabs_min_intersection), minElement(slabs_max_intersection));
+}
+
+vec3 computeGradient(in vec3 position) {
+
 }
 
 void main() {
