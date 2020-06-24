@@ -18,6 +18,7 @@
 #include "spdlog/spdlog.h"
 
 #include <array>
+#include <fstream>
 
 static void glfwErrorCallback(const int error, const char *description) {
   spdlog::error("GLFW error {}: {}", error, description);
@@ -26,7 +27,6 @@ static void glfwErrorCallback(const int error, const char *description) {
 static Gecko::OrbitCamera camera{glm::vec3{0.f, 0.f, 10.f},
                                  glm::zero<glm::vec3>()};
 static glm::vec2 previous_mouse_position;
-
 static uint8_t down_flags{0u};
 
 static void glfwKeyCallback(GLFWwindow *window, const int key,
@@ -54,7 +54,7 @@ static void glfwKeyCallback(GLFWwindow *window, const int key,
   }
 }
 
-static void createPerformanceOverlay() {
+static void createOverlay(float* min_value, float* mult) {
   constexpr static float DISTANCE{10.0f};
   const ImVec2 window_pos{DISTANCE, DISTANCE};
   const ImVec2 window_pos_pivot{0.0f, 0.0f};
@@ -69,6 +69,11 @@ static void createPerformanceOverlay() {
   ImGui::Text("Performance: %.3f ms/frame (%.1f FPS)",
               static_cast<double>(1000.0f / ImGui::GetIO().Framerate),
               static_cast<double>(ImGui::GetIO().Framerate));
+  ImGui::End();
+
+  ImGui::Begin("Score tf tuner");
+  ImGui::SliderFloat("Min value", min_value, 0.00001f, 1.f);
+  ImGui::SliderFloat("Color multiplier", mult, 1.f, 100.f);
   ImGui::End();
 }
 
@@ -126,7 +131,7 @@ template <typename T>
   return a * std::exp(-t * t / (2.f * c * c));
 }
 
-int main() {
+int main([[maybe_unused]] int argc, const char *argv[]) {
   try {
     glfwSetErrorCallback(glfwErrorCallback);
     if (!glfwInit()) {
@@ -221,43 +226,28 @@ int main() {
         Gecko::GLSLShader::createFromFile("../shaders/volume_render.vert"),
         Gecko::GLSLShader::createFromFile("../shaders/volume_render.frag")};
 
+    // Load file
+    std::ifstream input_file{argv[1]};
+    glm::vec3 bounds_min, bounds_max;
+    input_file >> bounds_min.x >> bounds_min.y >> bounds_min.z;
+    input_file >> bounds_max.x >> bounds_max.y >> bounds_max.z;
+    glm::ivec3 num_points;
+    input_file >> num_points.x >> num_points.y >> num_points.z;
+
     // Create example field
     using ScalarField = Gecko::ScalarField<float>;
+    ScalarField field{ScalarField::createFromMinMax(
+        bounds_min, bounds_max, num_points.x, num_points.y, num_points.z, 0.f)};
     float field_max{std::numeric_limits<float>::lowest()};
     float field_min{std::numeric_limits<float>::max()};
-    ScalarField field{ScalarField::createFromMinMax(
-        glm::vec3{-3.f}, glm::vec3{3.f}, 256, 256, 256, 0.f)};
-
-    {
-      constexpr static std::array<glm::vec3, 3> exp_centers{
-          glm::vec3{-2.f}, glm::vec3{0.f}, glm::vec3{2.f}};
-      constexpr static std::array<float, 3> exp_max{10.f, 3.f, 5.f};
-      constexpr static std::array<float, 3> exp_c{0.5f, 1.f, 0.8f};
-
-      for (int k{0}; k != field.zSize(); ++k) {
-        const float z_pos{field.min().z +
-                          static_cast<float>(k) * field.getVoxelSize().z};
-        for (int j{0}; j != field.ySize(); ++j) {
-          const float y_pos{field.min().y +
-                            static_cast<float>(j) * field.getVoxelSize().y};
-          for (int i{0}; i != field.xSize(); ++i) {
-            const float x_pos{field.min().x +
-                              static_cast<float>(i) * field.getVoxelSize().x};
-            float value{0.f};
-            const glm::vec3 p{x_pos, y_pos, z_pos};
-            for (std::size_t g_i{0}; g_i != exp_centers.size(); ++g_i) {
-              value =
-                  std::max(value, gaussian(glm::length(exp_centers[g_i] - p),
-                                           exp_max[g_i], 0.f, exp_c[g_i]));
-            }
-            if (value > field_max) {
-              field_max = value;
-            }
-            if (value < field_min) {
-              field_min = value;
-            }
-            field(i, j, k) = value;
-          }
+    for (int k{0}; k != field.zSize(); ++k) {
+      for (int j{0}; j != field.ySize(); ++j) {
+        for (int i{0}; i != field.xSize(); ++i) {
+          float v;
+          input_file >> v;
+          field_max = std::max(field_max, v);
+          field_min = std::min(field_min, v);
+          field(i, j, k) = v;
         }
       }
     }
@@ -280,8 +270,8 @@ int main() {
 
     volume_render_program.use();
     volume_render_program.setInt("volume_texture", 0);
-    volume_render_program.setVec2("volume_min_max",
-                                  glm::vec2{field_min, field_max});
+    //    volume_render_program.setVec2("volume_min_max",
+    //                                  glm::vec2{field_min, field_max});
 
     // Create tf texture
     std::array<glm::vec4, 512> tf_data{};
@@ -293,19 +283,19 @@ int main() {
       tf_data[i] = glm::vec4{30.f * gaussian_val, 0.f, 0.f, gaussian_val};
       current_pos += step;
     }
-
-    GLuint tf_texture;
-    glGenTextures(1, &tf_texture);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_1D, tf_texture);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA32F,
-                 static_cast<GLsizei>(tf_data.size()), 0, GL_RGBA, GL_FLOAT,
-                 glm::value_ptr(tf_data.front()));
-
-    volume_render_program.setInt("transfer_function_texture", 1);
+    //
+    //    GLuint tf_texture;
+    //    glGenTextures(1, &tf_texture);
+    //    glActiveTexture(GL_TEXTURE1);
+    //    glBindTexture(GL_TEXTURE_1D, tf_texture);
+    //    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    //    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA32F,
+    //                 static_cast<GLsizei>(tf_data.size()), 0, GL_RGBA,
+    //                 GL_FLOAT, glm::value_ptr(tf_data.front()));
+    //
+    //    volume_render_program.setInt("transfer_function_texture", 1);
 
     // Create geometry data
     GLuint vao;
@@ -337,14 +327,20 @@ int main() {
 
     // Window clear color
     glm::vec4 clear_color{0.1f, 0.1f, 0.1f, 1.f};
+    float min_value{0.f};
+    float mult{1.f};
 
     // From the field, compute the model matrix
-    const glm::mat4 M{field.computeModelMatrix()};
+    const glm::mat4 M{
+        glm::rotate(glm::radians(-90.f), glm::vec3{1.f, 0.f, 0.f}) *
+        glm::rotate(glm::radians(-90.f), glm::vec3{0.f, 0.f, 1.f}) *
+        field.computeModelMatrix()};
     const glm::mat4 MI{glm::inverse(M)};
-    volume_render_program.setFloat("step_size", (field.getVoxelSize().x +
-                                                 field.getVoxelSize().y +
-                                                 field.getVoxelSize().z) /
-                                                    static_cast<float>(9.f));
+    volume_render_program.setFloat(
+        "step_size",
+        std::min(field.getVoxelSize().x,
+                 std::min(field.getVoxelSize().y, field.getVoxelSize().z)) /
+            static_cast<float>(3.f));
 
     // Main render loop
     while (!glfwWindowShouldClose(window)) {
@@ -367,26 +363,28 @@ int main() {
           static_cast<float>(framebuffer_height), 0.1f, 100.f)};
       volume_render_program.setMat4("MVP", P * V * M);
 
+      // Start the Dear ImGui frame
+      ImGui_ImplOpenGL3_NewFrame();
+      ImGui_ImplGlfw_NewFrame();
+      ImGui::NewFrame();
+
+      createOverlay(&min_value, &mult);
+      volume_render_program.setFloat("min_value", min_value);
+      volume_render_program.setFloat("mult", mult);
+
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_3D, volume_texture);
-      glActiveTexture(GL_TEXTURE1);
-      glBindTexture(GL_TEXTURE_1D, tf_texture);
+      //      glActiveTexture(GL_TEXTURE1);
+      //      glBindTexture(GL_TEXTURE_1D, tf_texture);
 
       glBindVertexArray(vao);
       glDrawElements(GL_TRIANGLES,
                      static_cast<GLsizei>(ScalarField::cube_indices.size()),
                      GL_UNSIGNED_INT, nullptr);
 
-      glBindTexture(GL_TEXTURE_1D, 0);
+      //      glBindTexture(GL_TEXTURE_1D, 0);
       glBindTexture(GL_TEXTURE_3D, 0);
       glBindVertexArray(0);
-
-      // Start the Dear ImGui frame
-      ImGui_ImplOpenGL3_NewFrame();
-      ImGui_ImplGlfw_NewFrame();
-      ImGui::NewFrame();
-
-      createPerformanceOverlay();
 
       // Render
       ImGui::Render();

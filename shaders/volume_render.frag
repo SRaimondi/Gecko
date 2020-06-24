@@ -7,10 +7,9 @@ in vec3 p_model_space;
 uniform vec3 eye_model_space;
 uniform float step_size;
 
-uniform vec2 volume_min_max;
 uniform sampler3D volume_texture;
-
-uniform sampler1D transfer_function_texture;
+uniform float min_value;
+uniform float mult;
 
 float minElement(in vec3 v) {
     return min(v.x, min(v.y, v.z));
@@ -30,6 +29,22 @@ in vec3 bounds_min, in vec3 bounds_max) {
     return vec2(maxElement(slabs_min_intersection), minElement(slabs_max_intersection));
 }
 
+vec3 computeGradient(in vec3 position) {
+    float grad_eps = step_size;
+    float inv_2_grad_eps = 1.f / (2.f * grad_eps);
+    float dx = (texture(volume_texture, position + vec3(grad_eps, 0.f, 0.f)).r -
+                texture(volume_texture, position - vec3(grad_eps, 0.f, 0.f)).r) *
+                inv_2_grad_eps;
+    float dy = (texture(volume_texture, position + vec3(0.f, grad_eps, 0.f)).r -
+                texture(volume_texture, position - vec3(0.f, grad_eps, 0.f)).r) *
+                inv_2_grad_eps;
+    float dz = (texture(volume_texture, position + vec3(0.f, 0.f, grad_eps)).r -
+                texture(volume_texture, position - vec3(0.f, 0.f, grad_eps)).r) *
+                inv_2_grad_eps;
+
+    return vec3(dx, dy, dz);
+}
+
 void main() {
     vec3 dir = normalize(p_model_space - eye_model_space);
     vec2 t = computeBoundsHit(eye_model_space, vec3(1.f) / dir, vec3(0.f), vec3(1.f));
@@ -44,9 +59,11 @@ void main() {
     while (current_t <= t.y && alpha < 0.99f) {
         vec4 volume_value = texture(volume_texture, current_point);
         // Map volume value to tf interval
-        vec4 tf_value = texture(transfer_function_texture, (volume_value.r - volume_min_max.x) /
-        (volume_min_max.y - volume_min_max.x));
-
+        vec4 tf_value = vec4(0.f);
+        if (volume_value.r >= min_value) {
+            tf_value.rgb = mult * vec3(volume_value.r);
+            tf_value.a = volume_value.r;
+        }
         // Correct based on step size
         float alpha_p = 1.f - pow(1.f - tf_value.a, step_size);
         vec3 color_p = tf_value.rgb * step_size;
