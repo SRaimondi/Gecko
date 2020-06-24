@@ -35,7 +35,8 @@ set(SOURCE_FILES
         source/glutils/program.cpp
         source/camera/orbit_camera.cpp)
 
-set(GLAD_SOURCE source/glad/glad.c)
+set(GLAD_SOURCE
+        source/glad/glad.c)
 
 set(IMGUI_SOURCE
         external/imgui/imgui.cpp
@@ -49,8 +50,8 @@ set(EXECUTABLE_NAME Gecko)
 add_executable(${EXECUTABLE_NAME}
         ${HEADER_FILES}
         ${GLAD_SOURCE}
-        ${IMGUI_SOURCE}
-        ${SOURCE_FILES})
+        ${SOURCE_FILES}
+        ${IMGUI_SOURCE})
 
 target_include_directories(${EXECUTABLE_NAME} PRIVATE include)
 target_include_directories(${EXECUTABLE_NAME}
