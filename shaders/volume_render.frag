@@ -30,10 +30,6 @@ in vec3 bounds_min, in vec3 bounds_max) {
     return vec2(maxElement(slabs_min_intersection), minElement(slabs_max_intersection));
 }
 
-vec3 computeGradient(in vec3 position) {
-
-}
-
 void main() {
     vec3 dir = normalize(p_model_space - eye_model_space);
     vec2 t = computeBoundsHit(eye_model_space, vec3(1.f) / dir, vec3(0.f), vec3(1.f));
