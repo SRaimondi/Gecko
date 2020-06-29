@@ -238,16 +238,25 @@ int main([[maybe_unused]] int argc, const char *argv[]) {
     using ScalarField = Gecko::ScalarField<float>;
     ScalarField field{ScalarField::createFromMinMax(
         bounds_min, bounds_max, num_points.x, num_points.y, num_points.z, 0.f)};
+
+    std::unique_ptr<glm::vec3[]> normal_data{
+        new glm::vec3[num_points.x * num_points.y * num_points.z]};
+
     float field_max{std::numeric_limits<float>::lowest()};
     float field_min{std::numeric_limits<float>::max()};
+    std::size_t index{0};
     for (int k{0}; k != field.zSize(); ++k) {
       for (int j{0}; j != field.ySize(); ++j) {
         for (int i{0}; i != field.xSize(); ++i) {
-          float v;
-          input_file >> v;
-          field_max = std::max(field_max, v);
-          field_min = std::min(field_min, v);
-          field(i, j, k) = v;
+          float nx, ny, nz, s;
+          input_file >> nx >> ny >> nz >> s;
+          field_max = std::max(field_max, s);
+          field_min = std::min(field_min, s);
+          field(i, j, k) = s;
+          normal_data[index].x = nx;
+          normal_data[index].y = ny;
+          normal_data[index].z = nz;
+          ++index;
         }
       }
     }
@@ -270,19 +279,36 @@ int main([[maybe_unused]] int argc, const char *argv[]) {
 
     volume_render_program.use();
     volume_render_program.setInt("volume_texture", 0);
+
+    GLuint normal_texture;
+    glGenTextures(1, &normal_texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_3D, normal_texture);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB32F, field.xSize(), field.ySize(),
+                 field.zSize(), 0, GL_RGB, GL_FLOAT,
+                 reinterpret_cast<void *>(normal_data.get()));
+    glBindTexture(GL_TEXTURE_3D, 0);
+
+    volume_render_program.setInt("volume_normal_texture", 1);
+
     //    volume_render_program.setVec2("volume_min_max",
     //                                  glm::vec2{field_min, field_max});
 
     // Create tf texture
-    std::array<glm::vec4, 512> tf_data{};
-    const float step{(field_max - field_min) /
-                     static_cast<float>(tf_data.size() - 1)};
-    float current_pos{field_min};
-    for (std::size_t i{0}; i != tf_data.size(); ++i) {
-      const float gaussian_val{gaussian(current_pos, 1.f, 2.f, 0.05f)};
-      tf_data[i] = glm::vec4{30.f * gaussian_val, 0.f, 0.f, gaussian_val};
-      current_pos += step;
-    }
+    //    std::array<glm::vec4, 512> tf_data{};
+    //    const float step{(field_max - field_min) /
+    //                     static_cast<float>(tf_data.size() - 1)};
+    //    float current_pos{field_min};
+    //    for (std::size_t i{0}; i != tf_data.size(); ++i) {
+    //      const float gaussian_val{gaussian(current_pos, 1.f, 2.f, 0.05f)};
+    //      tf_data[i] = glm::vec4{30.f * gaussian_val, 0.f, 0.f, gaussian_val};
+    //      current_pos += step;
+    //    }
     //
     //    GLuint tf_texture;
     //    glGenTextures(1, &tf_texture);
@@ -340,7 +366,7 @@ int main([[maybe_unused]] int argc, const char *argv[]) {
         "step_size",
         std::min(field.getVoxelSize().x,
                  std::min(field.getVoxelSize().y, field.getVoxelSize().z)) /
-            static_cast<float>(3.f));
+            static_cast<float>(4.f));
 
     // Main render loop
     while (!glfwWindowShouldClose(window)) {
@@ -360,7 +386,7 @@ int main([[maybe_unused]] int argc, const char *argv[]) {
       glViewport(0, 0, framebuffer_width, framebuffer_height);
       const glm::mat4 P{glm::perspectiveFov(
           glm::radians(60.f), static_cast<float>(framebuffer_width),
-          static_cast<float>(framebuffer_height), 0.1f, 100.f)};
+          static_cast<float>(framebuffer_height), 0.1f, 400.f)};
       volume_render_program.setMat4("MVP", P * V * M);
 
       // Start the Dear ImGui frame
@@ -374,6 +400,8 @@ int main([[maybe_unused]] int argc, const char *argv[]) {
 
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_3D, volume_texture);
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_3D, normal_texture);
       //      glActiveTexture(GL_TEXTURE1);
       //      glBindTexture(GL_TEXTURE_1D, tf_texture);
 

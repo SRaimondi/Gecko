@@ -8,6 +8,8 @@ uniform vec3 eye_model_space;
 uniform float step_size;
 
 uniform sampler3D volume_texture;
+uniform sampler3D volume_normal_texture;
+
 uniform float min_value;
 uniform float mult;
 
@@ -28,7 +30,7 @@ in vec3 bounds_min, in vec3 bounds_max) {
 
     return vec2(maxElement(slabs_min_intersection), minElement(slabs_max_intersection));
 }
-
+/*
 vec3 computeGradient(in vec3 position) {
     float grad_eps = step_size;
     float inv_2_grad_eps = 1.f / (2.f * grad_eps);
@@ -43,7 +45,7 @@ vec3 computeGradient(in vec3 position) {
                 inv_2_grad_eps;
 
     return vec3(dx, dy, dz);
-}
+}*/
 
 void main() {
     vec3 dir = normalize(p_model_space - eye_model_space);
@@ -57,12 +59,18 @@ void main() {
     vec3 step = step_size * dir;
 
     while (current_t <= t.y && alpha < 0.99f) {
-        vec4 volume_value = texture(volume_texture, current_point);
+        float score_value = texture(volume_texture, current_point).r;
+        vec3 normal = normalize(texture(volume_normal_texture, current_point).xyz);
+
         // Map volume value to tf interval
         vec4 tf_value = vec4(0.f);
-        if (volume_value.r >= min_value) {
-            tf_value.rgb = mult * vec3(volume_value.r);
-            tf_value.a = volume_value.r;
+
+        if (score_value >= min_value) {
+            tf_value.rgb = mult * vec3(abs(dot(-dir, normal))) * abs(normal);
+            tf_value.a = 1.f;
+        } else {
+            tf_value.rgb = 0.1f * mult * vec3(score_value);
+            tf_value.a = score_value;
         }
         // Correct based on step size
         float alpha_p = 1.f - pow(1.f - tf_value.a, step_size);
